@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+firebase-admin
+httpx
+python-dotenv
+gunicorn
