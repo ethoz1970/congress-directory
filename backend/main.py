@@ -327,29 +327,91 @@ async def get_cosponsored_legislation(
 
 
 @app.get("/api/legislators/{bioguide_id}/legislation-summary")
-async def get_legislation_summary(bioguide_id: str):
+async def get_legislation_summary(bioguide_id: str, refresh: bool = False):
     """
-    Get a summary of sponsored and cosponsored legislation counts.
-    This is a quick overview without fetching all bills.
+    Get a summary of sponsored and cosponsored legislation counts,
+    including bills signed into law. Results are cached in Firestore
+    and refreshed daily or on demand.
     """
     leg_doc = db.collection("legislators").document(bioguide_id).get()
     if not leg_doc.exists:
         raise HTTPException(status_code=404, detail="Legislator not found")
     
+    # Check for cached data
+    cache_ref = db.collection("legislation_cache").document(bioguide_id)
+    cache_doc = cache_ref.get()
+    
+    if cache_doc.exists and not refresh:
+        cached_data = cache_doc.to_dict()
+        cached_at = cached_data.get("cached_at")
+        
+        # Use cache if less than 24 hours old
+        if cached_at:
+            from datetime import datetime, timezone, timedelta
+            cache_time = cached_at
+            if hasattr(cache_time, 'timestamp'):
+                # Firestore timestamp
+                cache_age = datetime.now(timezone.utc) - cache_time.replace(tzinfo=timezone.utc)
+            else:
+                cache_age = timedelta(hours=25)  # Force refresh if can't parse
+            
+            if cache_age < timedelta(hours=24):
+                return {
+                    "bioguide_id": bioguide_id,
+                    "sponsored_count": cached_data.get("sponsored_count", 0),
+                    "cosponsored_count": cached_data.get("cosponsored_count", 0),
+                    "enacted_count": cached_data.get("enacted_count", 0),
+                    "recent_sponsored": cached_data.get("recent_sponsored", []),
+                    "recent_enacted": cached_data.get("recent_enacted", []),
+                    "cached": True,
+                    "cached_at": str(cached_at)
+                }
+    
+    # Fetch fresh data from Congress.gov API
     sponsored_count = 0
     cosponsored_count = 0
+    enacted_count = 0
     recent_sponsored = []
+    recent_enacted = []
     
     async with httpx.AsyncClient() as client:
         # Get sponsored legislation count and recent bills
         try:
             url = f"{CONGRESS_API_BASE}/member/{bioguide_id}/sponsored-legislation"
-            params = {"api_key": CONGRESS_API_KEY, "format": "json", "limit": 5}
+            params = {"api_key": CONGRESS_API_KEY, "format": "json", "limit": 250}
             response = await client.get(url, params=params, timeout=30.0)
             if response.status_code == 200:
                 data = response.json()
                 sponsored_count = data.get("pagination", {}).get("count", 0)
-                recent_sponsored = data.get("sponsoredLegislation", [])[:5]
+                all_sponsored = data.get("sponsoredLegislation", [])
+                recent_sponsored = all_sponsored[:5]
+                
+                # Count enacted bills (check for "Became Public Law" in latestAction)
+                for bill in all_sponsored:
+                    latest_action = bill.get("latestAction", {})
+                    action_text = latest_action.get("text", "") if latest_action else ""
+                    if "Became Public Law" in action_text or "became public law" in action_text.lower():
+                        enacted_count += 1
+                        if len(recent_enacted) < 5:
+                            recent_enacted.append(bill)
+                
+                # If more than 250 bills, we need to paginate to get accurate enacted count
+                total_count = data.get("pagination", {}).get("count", 0)
+                if total_count > 250:
+                    offset = 250
+                    while offset < total_count:
+                        params["offset"] = offset
+                        response = await client.get(url, params=params, timeout=30.0)
+                        if response.status_code == 200:
+                            data = response.json()
+                            for bill in data.get("sponsoredLegislation", []):
+                                latest_action = bill.get("latestAction", {})
+                                action_text = latest_action.get("text", "") if latest_action else ""
+                                if "Became Public Law" in action_text or "became public law" in action_text.lower():
+                                    enacted_count += 1
+                                    if len(recent_enacted) < 5:
+                                        recent_enacted.append(bill)
+                        offset += 250
         except:
             pass
         
@@ -364,15 +426,82 @@ async def get_legislation_summary(bioguide_id: str):
         except:
             pass
     
+    # Cache the results in Firestore
+    from datetime import datetime, timezone
+    cache_data = {
+        "bioguide_id": bioguide_id,
+        "sponsored_count": sponsored_count,
+        "cosponsored_count": cosponsored_count,
+        "enacted_count": enacted_count,
+        "recent_sponsored": recent_sponsored,
+        "recent_enacted": recent_enacted,
+        "cached_at": datetime.now(timezone.utc)
+    }
+    cache_ref.set(cache_data)
+    
     return {
         "bioguide_id": bioguide_id,
         "sponsored_count": sponsored_count,
         "cosponsored_count": cosponsored_count,
-        "recent_sponsored": recent_sponsored
+        "enacted_count": enacted_count,
+        "recent_sponsored": recent_sponsored,
+        "recent_enacted": recent_enacted,
+        "cached": False
     }
 
 
 # ============ LEGACY ENDPOINTS ============
+
+@app.post("/api/cache/refresh-legislation")
+async def refresh_all_legislation_cache(limit: int = Query(default=10, le=50)):
+    """
+    Refresh legislation cache for legislators. Use limit to control how many
+    to refresh at once (to avoid API rate limits). Call repeatedly to refresh all.
+    Returns list of bioguide_ids that were refreshed.
+    """
+    from datetime import datetime, timezone, timedelta
+    
+    # Get legislators whose cache is old or missing
+    legislators = db.collection("legislators").stream()
+    to_refresh = []
+    
+    for leg in legislators:
+        bioguide_id = leg.id
+        cache_doc = db.collection("legislation_cache").document(bioguide_id).get()
+        
+        if not cache_doc.exists:
+            to_refresh.append(bioguide_id)
+        else:
+            cached_data = cache_doc.to_dict()
+            cached_at = cached_data.get("cached_at")
+            if cached_at:
+                if hasattr(cached_at, 'timestamp'):
+                    cache_age = datetime.now(timezone.utc) - cached_at.replace(tzinfo=timezone.utc)
+                    if cache_age > timedelta(hours=24):
+                        to_refresh.append(bioguide_id)
+                else:
+                    to_refresh.append(bioguide_id)
+            else:
+                to_refresh.append(bioguide_id)
+        
+        if len(to_refresh) >= limit:
+            break
+    
+    # Refresh each one
+    refreshed = []
+    for bioguide_id in to_refresh[:limit]:
+        try:
+            await get_legislation_summary(bioguide_id, refresh=True)
+            refreshed.append(bioguide_id)
+        except:
+            pass
+    
+    return {
+        "refreshed": refreshed,
+        "count": len(refreshed),
+        "remaining": len(to_refresh) - len(refreshed)
+    }
+
 
 @app.get("/api/senators")
 def get_senators(
@@ -381,3 +510,4 @@ def get_senators(
 ):
     """Get all senators (legacy endpoint)."""
     return get_legislators(state=state, party=party, chamber="Senate")
+

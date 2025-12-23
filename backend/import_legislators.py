@@ -36,6 +36,14 @@ def extract_legislator_data(legislator):
     else:
         return None
     
+    # Count terms by chamber
+    senate_terms = len([t for t in terms if t.get("type") == "sen"])
+    house_terms = len([t for t in terms if t.get("type") == "rep"])
+    total_terms = len(terms)
+    
+    # Calculate first elected date (start of first term)
+    first_term_start = terms[0].get("start") if terms else None
+    
     name = legislator.get("name", {})
     bio = legislator.get("bio", {})
     ids = legislator.get("id", {})
@@ -58,6 +66,10 @@ def extract_legislator_data(legislator):
         "office": current_term.get("office"),
         "website": current_term.get("url"),
         "contact_form": current_term.get("contact_form"),
+        "first_term_start": first_term_start,
+        "total_terms": total_terms,
+        "senate_terms": senate_terms,
+        "house_terms": house_terms,
         "external_ids": {
             "thomas": ids.get("thomas"),
             "govtrack": ids.get("govtrack"),
@@ -127,3 +139,4 @@ def import_legislators():
 
 if __name__ == "__main__":
     import_legislators()
+
