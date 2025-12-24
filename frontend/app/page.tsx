@@ -321,7 +321,7 @@ function HomeContent() {
               className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
             >
               <span>Chamber</span>
-              <span className="text-gray-400">{collapsed.chamber ? '+' : '−'}</span>
+              <span className={`text-gray-400 transition-transform duration-200 ${collapsed.chamber ? '' : 'rotate-90'}`}>▶</span>
             </button>
             {!collapsed.chamber && (
               <div className="space-y-2">
@@ -350,7 +350,7 @@ function HomeContent() {
               className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
             >
               <span>Party</span>
-              <span className="text-gray-400">{collapsed.party ? '+' : '−'}</span>
+              <span className={`text-gray-400 transition-transform duration-200 ${collapsed.party ? '' : 'rotate-90'}`}>▶</span>
             </button>
             {!collapsed.party && (
               <div className="space-y-2">
@@ -379,7 +379,7 @@ function HomeContent() {
               className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
             >
               <span>Gender</span>
-              <span className="text-gray-400">{collapsed.gender ? '+' : '−'}</span>
+              <span className={`text-gray-400 transition-transform duration-200 ${collapsed.gender ? '' : 'rotate-90'}`}>▶</span>
             </button>
             {!collapsed.gender && (
               <div className="space-y-2">
@@ -408,7 +408,7 @@ function HomeContent() {
               className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
             >
               <span>Years in Congress</span>
-              <span className="text-gray-400">{collapsed.yearsInCongress ? '+' : '−'}</span>
+              <span className={`text-gray-400 transition-transform duration-200 ${collapsed.yearsInCongress ? '' : 'rotate-90'}`}>▶</span>
             </button>
             {!collapsed.yearsInCongress && (
               <div className="space-y-2">
@@ -437,7 +437,7 @@ function HomeContent() {
               className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
             >
               <span>State</span>
-              <span className="text-gray-400">{collapsed.state ? '+' : '−'}</span>
+              <span className={`text-gray-400 transition-transform duration-200 ${collapsed.state ? '' : 'rotate-90'}`}>▶</span>
             </button>
             {!collapsed.state && (
               <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -473,7 +473,7 @@ function HomeContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">U.S. Congress Directory</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Poly Sci Fi</h1>
           {hasActiveFilters && (
             <span className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
               {filteredLegislators.length} of {legislators.length}
