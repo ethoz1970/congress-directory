@@ -120,6 +120,7 @@ function HomeContent() {
     yearsInCongress: false,
     state: false,
   });
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Initialize filters from URL on mount
   useEffect(() => {
@@ -148,6 +149,27 @@ function HomeContent() {
   const toggleCollapse = (section: string) => {
     setCollapsed(prev => ({ ...prev, [section]: !prev[section] }));
   };
+
+  // Close filters on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && filtersOpen) setFiltersOpen(false);
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [filtersOpen]);
+
+  // Prevent body scroll when filters open
+  useEffect(() => {
+    if (filtersOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [filtersOpen]);
 
   useEffect(() => {
     fetch(`${API_URL}/api/legislators`)
@@ -258,172 +280,208 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-gray-50">
+      {/* Filter slide-out backdrop */}
+      <div
+        className={`fixed inset-0 bg-black transition-opacity duration-300 z-30 ${
+          filtersOpen ? "opacity-50" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setFiltersOpen(false)}
+      />
+
+      {/* Filter slide-out panel */}
+      <div
+        className={`fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+          filtersOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Filters</h2>
+            <button
+              onClick={() => setFiltersOpen(false)}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+            >
+              ✕
+            </button>
+          </div>
+          
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="text-sm text-blue-600 hover:text-blue-800 mb-4"
+            >
+              Clear all filters
+            </button>
+          )}
+
+          {/* Chamber Filter */}
+          <div className="mb-6">
+            <button 
+              onClick={() => toggleCollapse('chamber')}
+              className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+            >
+              <span>Chamber</span>
+              <span className="text-gray-400">{collapsed.chamber ? '+' : '−'}</span>
+            </button>
+            {!collapsed.chamber && (
+              <div className="space-y-2">
+                {filterOptions.chambers.map((chamber) => (
+                  <label key={chamber} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.chamber.includes(chamber)}
+                      onChange={() => toggleFilter("chamber", chamber)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{chamber}</span>
+                    <span className="text-sm text-gray-400 ml-auto">
+                      ({chamberCounts[chamber] || 0})
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Party Filter */}
+          <div className="mb-6">
+            <button 
+              onClick={() => toggleCollapse('party')}
+              className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+            >
+              <span>Party</span>
+              <span className="text-gray-400">{collapsed.party ? '+' : '−'}</span>
+            </button>
+            {!collapsed.party && (
+              <div className="space-y-2">
+                {filterOptions.parties.map((party) => (
+                  <label key={party} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.party.includes(party)}
+                      onChange={() => toggleFilter("party", party)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{party}</span>
+                    <span className="text-sm text-gray-400 ml-auto">
+                      ({partyCounts[party] || 0})
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Gender Filter */}
+          <div className="mb-6">
+            <button 
+              onClick={() => toggleCollapse('gender')}
+              className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+            >
+              <span>Gender</span>
+              <span className="text-gray-400">{collapsed.gender ? '+' : '−'}</span>
+            </button>
+            {!collapsed.gender && (
+              <div className="space-y-2">
+                {filterOptions.genders.map((gender) => (
+                  <label key={gender} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.gender.includes(gender)}
+                      onChange={() => toggleFilter("gender", gender)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{GENDER_LABELS[gender] || gender}</span>
+                    <span className="text-sm text-gray-400 ml-auto">
+                      ({genderCounts[gender] || 0})
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Years in Congress Filter */}
+          <div className="mb-6">
+            <button 
+              onClick={() => toggleCollapse('yearsInCongress')}
+              className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+            >
+              <span>Years in Congress</span>
+              <span className="text-gray-400">{collapsed.yearsInCongress ? '+' : '−'}</span>
+            </button>
+            {!collapsed.yearsInCongress && (
+              <div className="space-y-2">
+                {YEARS_IN_CONGRESS_OPTIONS.map((option) => (
+                  <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.yearsInCongress.includes(option.key)}
+                      onChange={() => toggleFilter("yearsInCongress", option.key)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{option.label}</span>
+                    <span className="text-sm text-gray-400 ml-auto">
+                      ({yearsCounts[option.key] || 0})
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* State Filter */}
+          <div className="mb-6">
+            <button 
+              onClick={() => toggleCollapse('state')}
+              className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+            >
+              <span>State</span>
+              <span className="text-gray-400">{collapsed.state ? '+' : '−'}</span>
+            </button>
+            {!collapsed.state && (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {filterOptions.states.map((state) => (
+                  <label key={state} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.state.includes(state)}
+                      onChange={() => toggleFilter("state", state)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{STATE_NAMES[state] || state}</span>
+                    <span className="text-sm text-gray-400 ml-auto">
+                      ({stateCounts[state] || 0})
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">U.S. Congress Directory</h1>
+        <div className="flex items-center gap-4 mb-8">
+          {/* Hamburger menu button */}
+          <button
+            onClick={() => setFiltersOpen(true)}
+            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg"
+            aria-label="Open filters"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900">U.S. Congress Directory</h1>
+          {hasActiveFilters && (
+            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+              {filteredLegislators.length} of {legislators.length}
+            </span>
+          )}
+        </div>
 
-        <div className="flex gap-8">
-          {/* Filters Sidebar */}
-          <aside className="w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow p-4 sticky top-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Filters</h2>
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    Clear all
-                  </button>
-                )}
-              </div>
-
-              {/* Chamber Filter */}
-              <div className="mb-6">
-                <button 
-                  onClick={() => toggleCollapse('chamber')}
-                  className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
-                >
-                  <span>Chamber</span>
-                  <span className="text-gray-400">{collapsed.chamber ? '+' : '−'}</span>
-                </button>
-                {!collapsed.chamber && (
-                  <div className="space-y-2">
-                    {filterOptions.chambers.map((chamber) => (
-                      <label key={chamber} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={filters.chamber.includes(chamber)}
-                          onChange={() => toggleFilter("chamber", chamber)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{chamber}</span>
-                        <span className="text-sm text-gray-400 ml-auto">
-                          ({chamberCounts[chamber] || 0})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Party Filter */}
-              <div className="mb-6">
-                <button 
-                  onClick={() => toggleCollapse('party')}
-                  className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
-                >
-                  <span>Party</span>
-                  <span className="text-gray-400">{collapsed.party ? '+' : '−'}</span>
-                </button>
-                {!collapsed.party && (
-                  <div className="space-y-2">
-                    {filterOptions.parties.map((party) => (
-                      <label key={party} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={filters.party.includes(party)}
-                          onChange={() => toggleFilter("party", party)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{party}</span>
-                        <span className="text-sm text-gray-400 ml-auto">
-                          ({partyCounts[party] || 0})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Gender Filter */}
-              <div className="mb-6">
-                <button 
-                  onClick={() => toggleCollapse('gender')}
-                  className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
-                >
-                  <span>Gender</span>
-                  <span className="text-gray-400">{collapsed.gender ? '+' : '−'}</span>
-                </button>
-                {!collapsed.gender && (
-                  <div className="space-y-2">
-                    {filterOptions.genders.map((gender) => (
-                      <label key={gender} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={filters.gender.includes(gender)}
-                          onChange={() => toggleFilter("gender", gender)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{GENDER_LABELS[gender] || gender}</span>
-                        <span className="text-sm text-gray-400 ml-auto">
-                          ({genderCounts[gender] || 0})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Years in Congress Filter */}
-              <div className="mb-6">
-                <button 
-                  onClick={() => toggleCollapse('yearsInCongress')}
-                  className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
-                >
-                  <span>Years in Congress</span>
-                  <span className="text-gray-400">{collapsed.yearsInCongress ? '+' : '−'}</span>
-                </button>
-                {!collapsed.yearsInCongress && (
-                  <div className="space-y-2">
-                    {YEARS_IN_CONGRESS_OPTIONS.map((option) => (
-                      <label key={option.key} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={filters.yearsInCongress.includes(option.key)}
-                          onChange={() => toggleFilter("yearsInCongress", option.key)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{option.label}</span>
-                        <span className="text-sm text-gray-400 ml-auto">
-                          ({yearsCounts[option.key] || 0})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* State Filter */}
-              <div>
-                <button 
-                  onClick={() => toggleCollapse('state')}
-                  className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
-                >
-                  <span>State</span>
-                  <span className="text-gray-400">{collapsed.state ? '+' : '−'}</span>
-                </button>
-                {!collapsed.state && (
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {filterOptions.states.map((state) => (
-                      <label key={state} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={filters.state.includes(state)}
-                          onChange={() => toggleFilter("state", state)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{STATE_NAMES[state] || state}</span>
-                        <span className="text-sm text-gray-400 ml-auto">
-                          ({stateCounts[state] || 0})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </aside>
-
+        <div>
           {/* Results */}
           <div className="flex-1">
             <div className="mb-4 flex items-center justify-between">
