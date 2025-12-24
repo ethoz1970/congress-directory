@@ -79,6 +79,14 @@ const YEARS_IN_CONGRESS_OPTIONS = [
   { key: "over40", label: "40+ years", min: 40, max: 999 },
 ];
 
+const SORT_OPTIONS = [
+  { key: "name", label: "Name" },
+  { key: "age", label: "Age" },
+  { key: "terms", label: "Terms Served" },
+  { key: "years", label: "Time in Congress" },
+  { key: "state", label: "State" },
+];
+
 function getYearsInCongress(firstTermStart?: string): number {
   if (!firstTermStart) return 0;
   const start = new Date(firstTermStart);
@@ -113,7 +121,11 @@ function HomeContent() {
   });
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [selectedLegislator, setSelectedLegislator] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    sortSection: false,
+    filtersSection: false,
     chamber: false,
     party: false,
     gender: false,
@@ -196,7 +208,7 @@ function HomeContent() {
   }, [legislators]);
 
   const filteredLegislators = useMemo(() => {
-    return legislators.filter((legislator) => {
+    const filtered = legislators.filter((legislator) => {
       const chamberMatch = filters.chamber.length === 0 || filters.chamber.includes(legislator.chamber);
       const stateMatch = filters.state.length === 0 || filters.state.includes(legislator.state);
       const partyMatch = filters.party.length === 0 || filters.party.includes(legislator.party);
@@ -204,7 +216,40 @@ function HomeContent() {
       const yearsMatch = filters.yearsInCongress.length === 0 || filters.yearsInCongress.includes(getYearsInCongressBucket(legislator.first_term_start));
       return chamberMatch && stateMatch && partyMatch && genderMatch && yearsMatch;
     });
-  }, [legislators, filters]);
+
+    // Sort the filtered results
+    const sorted = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case "name":
+          comparison = a.last_name.localeCompare(b.last_name);
+          break;
+        case "age":
+          const ageA = a.birthday ? new Date(a.birthday).getTime() : 0;
+          const ageB = b.birthday ? new Date(b.birthday).getTime() : 0;
+          comparison = ageA - ageB; // Earlier birthday = older
+          break;
+        case "terms":
+          comparison = (b.total_terms || 1) - (a.total_terms || 1);
+          break;
+        case "years":
+          const yearsA = getYearsInCongress(a.first_term_start);
+          const yearsB = getYearsInCongress(b.first_term_start);
+          comparison = yearsB - yearsA;
+          break;
+        case "state":
+          comparison = a.state.localeCompare(b.state);
+          break;
+        default:
+          comparison = 0;
+      }
+      
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+
+    return sorted;
+  }, [legislators, filters, sortBy, sortDirection]);
 
   const toggleFilter = (filterType: keyof Filters, value: string) => {
     const current = filters[filterType];
@@ -341,7 +386,7 @@ function HomeContent() {
       >
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Filters</h2>
+            <h2 className="text-lg font-semibold">Options</h2>
             <button
               onClick={() => setFiltersOpen(false)}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
@@ -349,157 +394,211 @@ function HomeContent() {
               ✕
             </button>
           </div>
-          
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="text-sm text-blue-600 hover:text-blue-800 mb-4"
-            >
-              Clear all filters
-            </button>
-          )}
 
-          {/* Chamber Filter */}
-          <div className="mb-6">
+          {/* SORT BY - Main Collapsible Section */}
+          <div className="mb-4">
             <button 
-              onClick={() => toggleCollapse('chamber')}
-              className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+              onClick={() => toggleCollapse('sortSection')}
+              className="flex items-center justify-between w-full p-3 bg-gray-100 rounded-lg font-semibold text-gray-800 hover:bg-gray-200"
             >
-              <span>Chamber</span>
-              <span className={`text-gray-400 transition-transform duration-200 ${collapsed.chamber ? '' : 'rotate-90'}`}>▶</span>
+              <span>Sort By</span>
+              <span className={`text-gray-500 transition-transform duration-200 ${collapsed.sortSection ? '' : 'rotate-90'}`}>▶</span>
             </button>
-            {!collapsed.chamber && (
-              <div className="space-y-2">
-                {filterOptions.chambers.map((chamber) => (
-                  <label key={chamber} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.chamber.includes(chamber)}
-                      onChange={() => toggleFilter("chamber", chamber)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">{chamber}</span>
-                    <span className="text-sm text-gray-400 ml-auto">
-                      ({chamberCounts[chamber] || 0})
-                    </span>
-                  </label>
+            {!collapsed.sortSection && (
+              <div className="mt-2 ml-2 space-y-2">
+                {SORT_OPTIONS.map((option) => (
+                  <button
+                    key={option.key}
+                    onClick={() => {
+                      if (sortBy === option.key) {
+                        setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+                      } else {
+                        setSortBy(option.key);
+                        setSortDirection("asc");
+                      }
+                    }}
+                    className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors ${
+                      sortBy === option.key
+                        ? "bg-blue-100 text-blue-800"
+                        : "hover:bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    <span>{option.label}</span>
+                    {sortBy === option.key && (
+                      <span className="text-blue-600">
+                        {sortDirection === "asc" ? "↑" : "↓"}
+                      </span>
+                    )}
+                  </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Party Filter */}
-          <div className="mb-6">
+          {/* FILTERS - Main Collapsible Section */}
+          <div className="mb-4">
             <button 
-              onClick={() => toggleCollapse('party')}
-              className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+              onClick={() => toggleCollapse('filtersSection')}
+              className="flex items-center justify-between w-full p-3 bg-gray-100 rounded-lg font-semibold text-gray-800 hover:bg-gray-200"
             >
-              <span>Party</span>
-              <span className={`text-gray-400 transition-transform duration-200 ${collapsed.party ? '' : 'rotate-90'}`}>▶</span>
+              <span>Filters {hasActiveFilters && `(${filters.chamber.length + filters.party.length + filters.gender.length + filters.state.length + filters.yearsInCongress.length})`}</span>
+              <span className={`text-gray-500 transition-transform duration-200 ${collapsed.filtersSection ? '' : 'rotate-90'}`}>▶</span>
             </button>
-            {!collapsed.party && (
-              <div className="space-y-2">
-                {filterOptions.parties.map((party) => (
-                  <label key={party} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.party.includes(party)}
-                      onChange={() => toggleFilter("party", party)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">{party}</span>
-                    <span className="text-sm text-gray-400 ml-auto">
-                      ({partyCounts[party] || 0})
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
+            {!collapsed.filtersSection && (
+              <div className="mt-2 ml-2">
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-blue-600 hover:text-blue-800 mb-4"
+                  >
+                    Clear all filters
+                  </button>
+                )}
 
-          {/* Gender Filter */}
-          <div className="mb-6">
-            <button 
-              onClick={() => toggleCollapse('gender')}
-              className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
-            >
-              <span>Gender</span>
-              <span className={`text-gray-400 transition-transform duration-200 ${collapsed.gender ? '' : 'rotate-90'}`}>▶</span>
-            </button>
-            {!collapsed.gender && (
-              <div className="space-y-2">
-                {filterOptions.genders.map((gender) => (
-                  <label key={gender} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.gender.includes(gender)}
-                      onChange={() => toggleFilter("gender", gender)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">{GENDER_LABELS[gender] || gender}</span>
-                    <span className="text-sm text-gray-400 ml-auto">
-                      ({genderCounts[gender] || 0})
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
+                {/* Chamber Filter */}
+                <div className="mb-4">
+                  <button 
+                    onClick={() => toggleCollapse('chamber')}
+                    className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                  >
+                    <span>Chamber</span>
+                    <span className={`text-gray-400 transition-transform duration-200 ${collapsed.chamber ? '' : 'rotate-90'}`}>▶</span>
+                  </button>
+                  {!collapsed.chamber && (
+                    <div className="space-y-2 ml-2">
+                      {filterOptions.chambers.map((chamber) => (
+                        <label key={chamber} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.chamber.includes(chamber)}
+                            onChange={() => toggleFilter("chamber", chamber)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{chamber}</span>
+                          <span className="text-sm text-gray-400 ml-auto">
+                            ({chamberCounts[chamber] || 0})
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-          {/* Years in Congress Filter */}
-          <div className="mb-6">
-            <button 
-              onClick={() => toggleCollapse('yearsInCongress')}
-              className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
-            >
-              <span>Years in Congress</span>
-              <span className={`text-gray-400 transition-transform duration-200 ${collapsed.yearsInCongress ? '' : 'rotate-90'}`}>▶</span>
-            </button>
-            {!collapsed.yearsInCongress && (
-              <div className="space-y-2">
-                {YEARS_IN_CONGRESS_OPTIONS.map((option) => (
-                  <label key={option.key} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.yearsInCongress.includes(option.key)}
-                      onChange={() => toggleFilter("yearsInCongress", option.key)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">{option.label}</span>
-                    <span className="text-sm text-gray-400 ml-auto">
-                      ({yearsCounts[option.key] || 0})
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
+                {/* Party Filter */}
+                <div className="mb-4">
+                  <button 
+                    onClick={() => toggleCollapse('party')}
+                    className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                  >
+                    <span>Party</span>
+                    <span className={`text-gray-400 transition-transform duration-200 ${collapsed.party ? '' : 'rotate-90'}`}>▶</span>
+                  </button>
+                  {!collapsed.party && (
+                    <div className="space-y-2 ml-2">
+                      {filterOptions.parties.map((party) => (
+                        <label key={party} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.party.includes(party)}
+                            onChange={() => toggleFilter("party", party)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{party}</span>
+                          <span className="text-sm text-gray-400 ml-auto">
+                            ({partyCounts[party] || 0})
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-          {/* State Filter */}
-          <div className="mb-6">
-            <button 
-              onClick={() => toggleCollapse('state')}
-              className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
-            >
-              <span>State</span>
-              <span className={`text-gray-400 transition-transform duration-200 ${collapsed.state ? '' : 'rotate-90'}`}>▶</span>
-            </button>
-            {!collapsed.state && (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {filterOptions.states.map((state) => (
-                  <label key={state} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.state.includes(state)}
-                      onChange={() => toggleFilter("state", state)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">{STATE_NAMES[state] || state}</span>
-                    <span className="text-sm text-gray-400 ml-auto">
-                      ({stateCounts[state] || 0})
-                    </span>
-                  </label>
-                ))}
+                {/* Gender Filter */}
+                <div className="mb-4">
+                  <button 
+                    onClick={() => toggleCollapse('gender')}
+                    className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                  >
+                    <span>Gender</span>
+                    <span className={`text-gray-400 transition-transform duration-200 ${collapsed.gender ? '' : 'rotate-90'}`}>▶</span>
+                  </button>
+                  {!collapsed.gender && (
+                    <div className="space-y-2 ml-2">
+                      {filterOptions.genders.map((gender) => (
+                        <label key={gender} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.gender.includes(gender)}
+                            onChange={() => toggleFilter("gender", gender)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{GENDER_LABELS[gender] || gender}</span>
+                          <span className="text-sm text-gray-400 ml-auto">
+                            ({genderCounts[gender] || 0})
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Years in Congress Filter */}
+                <div className="mb-4">
+                  <button 
+                    onClick={() => toggleCollapse('yearsInCongress')}
+                    className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                  >
+                    <span>Years in Congress</span>
+                    <span className={`text-gray-400 transition-transform duration-200 ${collapsed.yearsInCongress ? '' : 'rotate-90'}`}>▶</span>
+                  </button>
+                  {!collapsed.yearsInCongress && (
+                    <div className="space-y-2 ml-2">
+                      {YEARS_IN_CONGRESS_OPTIONS.map((option) => (
+                        <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.yearsInCongress.includes(option.key)}
+                            onChange={() => toggleFilter("yearsInCongress", option.key)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{option.label}</span>
+                          <span className="text-sm text-gray-400 ml-auto">
+                            ({yearsCounts[option.key] || 0})
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* State Filter */}
+                <div className="mb-4">
+                  <button 
+                    onClick={() => toggleCollapse('state')}
+                    className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                  >
+                    <span>State</span>
+                    <span className={`text-gray-400 transition-transform duration-200 ${collapsed.state ? '' : 'rotate-90'}`}>▶</span>
+                  </button>
+                  {!collapsed.state && (
+                    <div className="space-y-2 max-h-96 overflow-y-auto ml-2">
+                      {filterOptions.states.map((state) => (
+                        <label key={state} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.state.includes(state)}
+                            onChange={() => toggleFilter("state", state)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{STATE_NAMES[state] || state}</span>
+                          <span className="text-sm text-gray-400 ml-auto">
+                            ({stateCounts[state] || 0})
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
