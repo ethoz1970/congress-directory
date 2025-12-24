@@ -511,3 +511,142 @@ def get_senators(
     """Get all senators (legacy endpoint)."""
     return get_legislators(state=state, party=party, chamber="Senate")
 
+
+# ============ YOUTUBE ENDPOINTS ============
+
+YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
+YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
+
+@app.get("/api/legislators/{bioguide_id}/youtube-videos")
+async def get_youtube_videos(bioguide_id: str, refresh: bool = False):
+    """
+    Get recent YouTube videos for a legislator.
+    Results are cached in Firestore for 24 hours.
+    """
+    if not YOUTUBE_API_KEY:
+        return {"videos": [], "error": "YouTube API key not configured"}
+    
+    # Get legislator to find YouTube channel
+    doc = db.collection("legislators").document(bioguide_id).get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="Legislator not found")
+    
+    legislator = doc.to_dict()
+    external_ids = legislator.get("external_ids", {})
+    youtube_channel = external_ids.get("youtube")
+    youtube_id = external_ids.get("youtube_id")
+    
+    if not youtube_channel and not youtube_id:
+        return {"videos": [], "bioguide_id": bioguide_id}
+    
+    # Check cache first
+    cache_ref = db.collection("youtube_cache").document(bioguide_id)
+    cache_doc = cache_ref.get()
+    
+    if cache_doc.exists and not refresh:
+        cache_data = cache_doc.to_dict()
+        cached_at = cache_data.get("cached_at")
+        if cached_at:
+            from datetime import datetime, timedelta
+            cache_time = cached_at
+            if hasattr(cache_time, 'timestamp'):
+                cache_age = datetime.now().timestamp() - cache_time.timestamp()
+                # Cache for 24 hours
+                if cache_age < 86400:
+                    return {
+                        "videos": cache_data.get("videos", []),
+                        "bioguide_id": bioguide_id,
+                        "cached": True
+                    }
+    
+    # Fetch from YouTube API using uploads playlist method
+    try:
+        async with httpx.AsyncClient() as client:
+            # First, get channel ID if we only have username
+            channel_id = youtube_id
+            
+            if not channel_id and youtube_channel:
+                # Try to get channel by username/handle
+                search_url = f"{YOUTUBE_API_BASE}/search"
+                search_params = {
+                    "key": YOUTUBE_API_KEY,
+                    "q": youtube_channel,
+                    "type": "channel",
+                    "part": "snippet",
+                    "maxResults": 1
+                }
+                search_resp = await client.get(search_url, params=search_params)
+                if search_resp.status_code == 200:
+                    search_data = search_resp.json()
+                    items = search_data.get("items", [])
+                    if items:
+                        channel_id = items[0]["snippet"]["channelId"]
+            
+            if not channel_id:
+                return {"videos": [], "bioguide_id": bioguide_id, "error": "Channel not found"}
+            
+            # Get channel's uploads playlist ID
+            channel_url = f"{YOUTUBE_API_BASE}/channels"
+            channel_params = {
+                "key": YOUTUBE_API_KEY,
+                "id": channel_id,
+                "part": "contentDetails"
+            }
+            channel_resp = await client.get(channel_url, params=channel_params)
+            
+            if channel_resp.status_code != 200:
+                return {"videos": [], "bioguide_id": bioguide_id, "error": f"Channel lookup error: {channel_resp.status_code}"}
+            
+            channel_data = channel_resp.json()
+            if not channel_data.get("items"):
+                return {"videos": [], "bioguide_id": bioguide_id, "error": "Channel not found"}
+            
+            uploads_playlist_id = channel_data["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+            
+            # Get videos from uploads playlist
+            playlist_url = f"{YOUTUBE_API_BASE}/playlistItems"
+            playlist_params = {
+                "key": YOUTUBE_API_KEY,
+                "playlistId": uploads_playlist_id,
+                "part": "snippet",
+                "maxResults": 5
+            }
+            
+            response = await client.get(playlist_url, params=playlist_params)
+            
+            if response.status_code != 200:
+                return {"videos": [], "bioguide_id": bioguide_id, "error": f"YouTube API error: {response.status_code}"}
+            
+            data = response.json()
+            videos = []
+            
+            for item in data.get("items", []):
+                snippet = item.get("snippet", {})
+                video_id = snippet.get("resourceId", {}).get("videoId")
+                
+                if video_id:
+                    videos.append({
+                        "video_id": video_id,
+                        "title": snippet.get("title", ""),
+                        "description": snippet.get("description", "")[:200],
+                        "thumbnail_url": snippet.get("thumbnails", {}).get("medium", {}).get("url", ""),
+                        "published_at": snippet.get("publishedAt", "")
+                    })
+            
+            # Cache the results
+            from datetime import datetime
+            cache_ref.set({
+                "bioguide_id": bioguide_id,
+                "videos": videos,
+                "cached_at": datetime.now(),
+                "channel_id": channel_id
+            })
+            
+            return {
+                "videos": videos,
+                "bioguide_id": bioguide_id,
+                "cached": False
+            }
+            
+    except Exception as e:
+        return {"videos": [], "bioguide_id": bioguide_id, "error": str(e)}

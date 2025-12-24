@@ -38,6 +38,7 @@ interface Legislator {
     ballotpedia?: string;
     twitter?: string;
     youtube?: string;
+    youtube_id?: string;
     facebook?: string;
   };
 }
@@ -79,6 +80,14 @@ interface LegislationSummary {
   enacted_count: number;
   recent_sponsored: Bill[];
   recent_enacted: Bill[];
+}
+
+interface YouTubeVideo {
+  video_id: string;
+  title: string;
+  description: string;
+  thumbnail_url: string;
+  published_at: string;
 }
 
 interface SlideOutPanelProps {
@@ -215,6 +224,9 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
   const [committees, setCommittees] = useState<CommitteesData | null>(null);
   const [legislation, setLegislation] = useState<LegislationSummary | null>(null);
   const [legislationLoading, setLegislationLoading] = useState(true);
+  const [youtubeVideos, setYoutubeVideos] = useState<YouTubeVideo[]>([]);
+  const [youtubeLoading, setYoutubeLoading] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAllSubcommittees, setShowAllSubcommittees] = useState(false);
@@ -226,13 +238,17 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
       setLegislator(null);
       setCommittees(null);
       setLegislation(null);
+      setYoutubeVideos([]);
+      setSelectedVideo(null);
       return;
     }
 
     setLoading(true);
     setLegislationLoading(true);
+    setYoutubeLoading(true);
     setError(null);
     setShowAllSubcommittees(false);
+    setSelectedVideo(null);
 
     fetch(`${API_URL}/api/legislators/${bioguideId}`)
       .then((res) => {
@@ -242,10 +258,28 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
       .then((data) => {
         setLegislator(data);
         setLoading(false);
+        
+        // Fetch YouTube videos if they have a channel
+        if (data.external_ids?.youtube || data.external_ids?.youtube_id) {
+          fetch(`${API_URL}/api/legislators/${bioguideId}/youtube-videos`)
+            .then((res) => res.json())
+            .then((videos) => {
+              setYoutubeVideos(videos.videos || []);
+              setYoutubeLoading(false);
+            })
+            .catch(() => {
+              setYoutubeVideos([]);
+              setYoutubeLoading(false);
+            });
+        } else {
+          setYoutubeVideos([]);
+          setYoutubeLoading(false);
+        }
       })
       .catch((err) => {
         setError(err.message);
         setLoading(false);
+        setYoutubeLoading(false);
       });
 
     fetch(`${API_URL}/api/legislators/${bioguideId}/committees`)
@@ -665,6 +699,70 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                         </a>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* YouTube Videos */}
+                {(youtubeLoading || youtubeVideos.length > 0) && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Recent Videos</h3>
+                    {youtubeLoading ? (
+                      <p className="text-sm text-gray-400">Loading videos...</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Video Embed */}
+                        {selectedVideo && (
+                          <div className="mb-4">
+                            <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-lg">
+                              <iframe
+                                className="absolute top-0 left-0 w-full h-full"
+                                src={`https://www.youtube.com/embed/${selectedVideo}`}
+                                title="YouTube video player"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                            <button
+                              onClick={() => setSelectedVideo(null)}
+                              className="mt-2 text-sm text-gray-500 hover:text-gray-700"
+                            >
+                              ✕ Close video
+                            </button>
+                          </div>
+                        )}
+                        
+                        {/* Video Thumbnails */}
+                        {youtubeVideos.map((video) => (
+                          <div
+                            key={video.video_id}
+                            className={`flex gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                              selectedVideo === video.video_id
+                                ? "bg-red-50 border border-red-200"
+                                : "hover:bg-gray-50"
+                            }`}
+                            onClick={() => setSelectedVideo(video.video_id)}
+                          >
+                            <img
+                              src={video.thumbnail_url}
+                              alt={video.title}
+                              className="w-32 h-20 object-cover rounded flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
+                                {video.title}
+                              </h4>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(video.published_at).toLocaleDateString()}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                                {video.description}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
