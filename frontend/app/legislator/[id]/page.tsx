@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
+import { API_URL } from "../../lib/api";
 
 interface Legislator {
   id: string;
@@ -26,6 +25,10 @@ interface Legislator {
   state_rank?: string;
   senate_class?: number;
   district?: number;
+  first_term_start?: string;
+  total_terms?: number;
+  senate_terms?: number;
+  house_terms?: number;
   external_ids: {
     thomas?: string;
     govtrack?: number;
@@ -33,6 +36,9 @@ interface Legislator {
     votesmart?: number;
     wikipedia?: string;
     ballotpedia?: string;
+    twitter?: string;
+    youtube?: string;
+    facebook?: string;
   };
 }
 
@@ -70,7 +76,14 @@ interface LegislationSummary {
   bioguide_id: string;
   sponsored_count: number;
   cosponsored_count: number;
+  enacted_count: number;
   recent_sponsored: Bill[];
+  recent_enacted: Bill[];
+}
+
+interface SlideOutPanelProps {
+  bioguideId: string | null;
+  onClose: () => void;
 }
 
 const STATE_NAMES: Record<string, string> = {
@@ -99,6 +112,68 @@ const CHAMBER_COLORS: Record<string, string> = {
   House: "bg-emerald-100 text-emerald-800 border-emerald-200",
 };
 
+function calculateTimeInOffice(termStart: string): string {
+  const start = new Date(termStart);
+  const today = new Date();
+  const years = today.getFullYear() - start.getFullYear();
+  const months = today.getMonth() - start.getMonth();
+  
+  let totalMonths = years * 12 + months;
+  if (today.getDate() < start.getDate()) {
+    totalMonths--;
+  }
+  
+  const finalYears = Math.floor(totalMonths / 12);
+  const finalMonths = totalMonths % 12;
+  
+  if (finalYears === 0) {
+    return `${finalMonths} month${finalMonths !== 1 ? 's' : ''}`;
+  } else if (finalMonths === 0) {
+    return `${finalYears} year${finalYears !== 1 ? 's' : ''}`;
+  } else {
+    return `${finalYears}y ${finalMonths}m`;
+  }
+}
+
+function calculateYearsOfService(firstTermStart: string): string {
+  const start = new Date(firstTermStart);
+  const today = new Date();
+  const years = today.getFullYear() - start.getFullYear();
+  const months = today.getMonth() - start.getMonth();
+  
+  let totalMonths = years * 12 + months;
+  if (today.getDate() < start.getDate()) {
+    totalMonths--;
+  }
+  
+  const finalYears = Math.floor(totalMonths / 12);
+  
+  if (finalYears < 1) {
+    return "< 1 year";
+  } else {
+    return `${finalYears} year${finalYears !== 1 ? 's' : ''}`;
+  }
+}
+
+function formatTermCount(legislator: Legislator): string {
+  if (!legislator.total_terms) return "1 term";
+  
+  const parts: string[] = [];
+  
+  if (legislator.senate_terms && legislator.senate_terms > 0) {
+    parts.push(`${legislator.senate_terms} Senate`);
+  }
+  if (legislator.house_terms && legislator.house_terms > 0) {
+    parts.push(`${legislator.house_terms} House`);
+  }
+  
+  if (parts.length === 1) {
+    return `${legislator.total_terms} term${legislator.total_terms !== 1 ? 's' : ''}`;
+  }
+  
+  return `${legislator.total_terms} terms (${parts.join(', ')})`;
+}
+
 function calculateAge(birthday: string): number {
   const birth = new Date(birthday);
   const today = new Date();
@@ -120,6 +195,7 @@ function formatDate(dateString: string): string {
 }
 
 function getBillUrl(bill: Bill): string {
+  if (!bill || !bill.type) return "#";
   const typeMap: Record<string, string> = {
     HR: "house-bill",
     S: "senate-bill",
@@ -134,8 +210,7 @@ function getBillUrl(bill: Bill): string {
   return `https://www.congress.gov/bill/${bill.congress}th-congress/${billType}/${bill.number}`;
 }
 
-export default function LegislatorDetail() {
-  const params = useParams();
+export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProps) {
   const [legislator, setLegislator] = useState<Legislator | null>(null);
   const [committees, setCommittees] = useState<CommitteesData | null>(null);
   const [legislation, setLegislation] = useState<LegislationSummary | null>(null);
@@ -144,10 +219,22 @@ export default function LegislatorDetail() {
   const [error, setError] = useState<string | null>(null);
   const [showAllSubcommittees, setShowAllSubcommittees] = useState(false);
 
-  useEffect(() => {
-    if (!params.id) return;
+  const isOpen = bioguideId !== null;
 
-    fetch(`http://localhost:8000/api/legislators/${params.id}`)
+  useEffect(() => {
+    if (!bioguideId) {
+      setLegislator(null);
+      setCommittees(null);
+      setLegislation(null);
+      return;
+    }
+
+    setLoading(true);
+    setLegislationLoading(true);
+    setError(null);
+    setShowAllSubcommittees(false);
+
+    fetch(`${API_URL}/api/legislators/${bioguideId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Legislator not found");
         return res.json();
@@ -161,7 +248,7 @@ export default function LegislatorDetail() {
         setLoading(false);
       });
 
-    fetch(`http://localhost:8000/api/legislators/${params.id}/committees`)
+    fetch(`${API_URL}/api/legislators/${bioguideId}/committees`)
       .then((res) => res.json())
       .then((data) => {
         setCommittees(data);
@@ -170,7 +257,7 @@ export default function LegislatorDetail() {
         setCommittees(null);
       });
 
-    fetch(`http://localhost:8000/api/legislators/${params.id}/legislation-summary`)
+    fetch(`${API_URL}/api/legislators/${bioguideId}/legislation-summary`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch");
         return res.json();
@@ -179,440 +266,412 @@ export default function LegislatorDetail() {
         setLegislation(data);
         setLegislationLoading(false);
       })
-      .catch((err) => {
-        console.error("Legislation fetch error:", err);
+      .catch(() => {
         setLegislation(null);
         setLegislationLoading(false);
       });
-  }, [params.id]);
+  }, [bioguideId]);
 
-  if (loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-xl">Loading...</p>
-      </main>
-    );
-  }
+  // Close on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
 
-  if (error || !legislator) {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <p className="text-xl text-red-600 mb-4">Error: {error || "Legislator not found"}</p>
-        <Link href="/" className="text-blue-600 hover:text-blue-800">
-          ← Back to directory
-        </Link>
-      </main>
-    );
-  }
+  // Prevent body scroll when open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
-  const position = legislator.chamber === "Senate"
+  const position = legislator?.chamber === "Senate"
     ? `${legislator.state_rank?.charAt(0).toUpperCase()}${legislator.state_rank?.slice(1)} Senator from ${STATE_NAMES[legislator.state]}`
-    : `Representative from ${STATE_NAMES[legislator.state]}${legislator.district === 0 ? " (At-Large)" : `, District ${legislator.district}`}`;
+    : legislator ? `Representative from ${STATE_NAMES[legislator.state]}${legislator.district === 0 ? " (At-Large)" : `, District ${legislator.district}`}` : "";
 
-  const visibleSubcommittees = showAllSubcommittees 
+  const visibleSubcommittees = showAllSubcommittees
     ? committees?.subcommittees || []
     : (committees?.subcommittees || []).slice(0, 5);
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <Link 
-          href="/" 
-          className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6"
+    <>
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 bg-black transition-opacity duration-300 z-40 ${
+          isOpen ? "opacity-50" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={onClose}
+      />
+
+      {/* Slide-out panel */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full max-w-2xl bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full z-10"
         >
-          ← Back to directory
-        </Link>
+          ✕
+        </button>
 
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Header with photo */}
-          <div className="md:flex">
-            <div className="md:flex-shrink-0">
-              <img
-                src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
-                alt={legislator.full_name}
-                className="h-64 w-full md:w-48 object-cover bg-gray-200"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://via.placeholder.com/192x256?text=No+Photo";
-                }}
-              />
+        {/* Content */}
+        <div className="h-full overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-xl text-gray-500">Loading...</p>
             </div>
-            <div className="p-6 flex-1">
-              <div className="flex flex-wrap gap-2 mb-3">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${CHAMBER_COLORS[legislator.chamber]}`}>
-                  {legislator.chamber}
-                </span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${PARTY_COLORS[legislator.party]}`}>
-                  {legislator.party}
-                </span>
-                {legislator.caucus && legislator.caucus !== legislator.party && (
-                  <span className="px-3 py-1 rounded-full text-sm font-medium border bg-gray-100 text-gray-800 border-gray-200">
-                    Caucuses with {legislator.caucus}s
-                  </span>
-                )}
-              </div>
-              
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                {legislator.full_name}
-                {legislator.nickname && (
-                  <span className="text-gray-500 font-normal text-xl"> "{legislator.nickname}"</span>
-                )}
-              </h1>
-              
-              <p className="text-lg text-gray-600 mt-1">{position}</p>
-
-              {legislator.birthday && (
-                <p className="text-gray-500 mt-2">
-                  Born {formatDate(legislator.birthday)} (age {calculateAge(legislator.birthday)})
-                </p>
-              )}
+          ) : error || !legislator ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-xl text-red-600">{error || "Legislator not found"}</p>
             </div>
-          </div>
-
-          {/* Details sections */}
-          <div className="border-t border-gray-200">
-            <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200">
-              {/* Term Information */}
-              <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Term Information</h2>
-                <dl className="space-y-3">
-                  {legislator.chamber === "Senate" && (
-                    <div>
-                      <dt className="text-sm text-gray-500">Senate Class</dt>
-                      <dd className="text-gray-900">Class {legislator.senate_class}</dd>
+          ) : (
+            <div>
+              {/* Header with photo */}
+              <div className="relative">
+                <div className={`h-52 ${
+                  legislator.party === "Republican" 
+                    ? "bg-gradient-to-r from-red-600 to-red-700"
+                    : legislator.party === "Democrat"
+                      ? "bg-gradient-to-r from-blue-600 to-blue-700"
+                      : "bg-gradient-to-r from-purple-600 to-purple-700"
+                }`} />
+                <div className="px-6 pb-4">
+                  <div className="relative -mt-44 flex items-start gap-5">
+                    <img
+                      src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                      alt={legislator.full_name}
+                      className="w-64 h-80 object-cover rounded-lg border-4 border-white shadow-lg bg-gray-200 flex-shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/256x320?text=No+Photo";
+                      }}
+                    />
+                    <div className="flex-1 pt-2">
+                      {/* Tags and name in colored section - aligned with top of photo */}
+                      <div className="mb-4">
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30">
+                            {legislator.chamber}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30">
+                            {legislator.party}
+                          </span>
+                        </div>
+                        <h2 className="text-2xl font-bold text-white">
+                          {legislator.full_name}
+                        </h2>
+                        <p className="text-white/80">{position}</p>
+                      </div>
+                      
+                      {/* Contact info in white section */}
+                      <div className="mt-8 space-y-1">
+                        {legislator.phone && (
+                          <a href={`tel:${legislator.phone}`} className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
+                            📞 {legislator.phone}
+                          </a>
+                        )}
+                        {legislator.office && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            🏛️ {legislator.office}
+                          </div>
+                        )}
+                        {legislator.website && (
+                          <a href={legislator.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
+                            🌐 Official Website →
+                          </a>
+                        )}
+                        {legislator.contact_form && (
+                          <a href={legislator.contact_form} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
+                            ✉️ Contact Form →
+                          </a>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  {legislator.chamber === "House" && (
-                    <div>
-                      <dt className="text-sm text-gray-500">District</dt>
-                      <dd className="text-gray-900">
-                        {legislator.district === 0 ? "At-Large" : `District ${legislator.district}`}
-                      </dd>
-                    </div>
-                  )}
-                  <div>
-                    <dt className="text-sm text-gray-500">Current Term</dt>
-                    <dd className="text-gray-900">
-                      {formatDate(legislator.term_start)} — {formatDate(legislator.term_end)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">State</dt>
-                    <dd className="text-gray-900">{STATE_NAMES[legislator.state]} ({legislator.state})</dd>
-                  </div>
-                </dl>
-              </div>
-
-              {/* Contact Information */}
-              <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
-                <dl className="space-y-3">
-                  {legislator.phone && (
-                    <div>
-                      <dt className="text-sm text-gray-500">Phone</dt>
-                      <dd className="text-gray-900">
-                        <a href={`tel:${legislator.phone}`} className="text-blue-600 hover:text-blue-800">
-                          {legislator.phone}
-                        </a>
-                      </dd>
-                    </div>
-                  )}
-                  {legislator.office && (
-                    <div>
-                      <dt className="text-sm text-gray-500">Office</dt>
-                      <dd className="text-gray-900">{legislator.office}</dd>
-                    </div>
-                  )}
-                  {legislator.website && (
-                    <div>
-                      <dt className="text-sm text-gray-500">Website</dt>
-                      <dd>
-                        <a 
-                          href={legislator.website} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          {legislator.website.replace(/^https?:\/\/(www\.)?/, '')}
-                        </a>
-                      </dd>
-                    </div>
-                  )}
-                  {legislator.contact_form && (
-                    <div>
-                      <dt className="text-sm text-gray-500">Contact Form</dt>
-                      <dd>
-                        <a 
-                          href={legislator.contact_form} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          Send a message →
-                        </a>
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-              </div>
-            </div>
-          </div>
-
-          {/* Sponsored Legislation - Live from Congress.gov */}
-          <div className="border-t border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Legislative Activity
-              <span className="ml-2 text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                Live from Congress.gov
-              </span>
-            </h2>
-            
-            {legislationLoading ? (
-              <div className="text-gray-500 text-sm">Loading legislation data...</div>
-            ) : legislation ? (
-              <div>
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="text-3xl font-bold text-blue-700">{legislation.sponsored_count}</div>
-                    <div className="text-sm text-blue-600">Bills Sponsored</div>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <div className="text-3xl font-bold text-green-700">{legislation.cosponsored_count}</div>
-                    <div className="text-sm text-green-600">Bills Cosponsored</div>
                   </div>
                 </div>
-
-                {/* Recent Sponsored Bills */}
-                {legislation.recent_sponsored.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-                      Recent Sponsored Bills
-                    </h3>
-                    <div className="space-y-3">
-                      {legislation.recent_sponsored.map((bill, idx) => (
-                        <a
-                          key={idx}
-                          href={getBillUrl(bill)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <span className="font-medium text-gray-900">
-                                {bill.type}.{bill.number}
-                              </span>
-                              <span className="text-gray-500 text-sm ml-2">
-                                {bill.congress}th Congress
-                              </span>
-                              {bill.title && (
-                                <p className="text-sm text-gray-600 mt-1">
-                                  {bill.title}
-                                </p>
-                              )}
-                              {bill.latestAction && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Latest: {bill.latestAction.text} ({bill.latestAction.actionDate})
-                                </p>
-                              )}
-                            </div>
-                            <span className="text-gray-400 ml-2">↗</span>
-                          </div>
-                        </a>
-                      ))}
-                    </div>
-                    <a
-                      href={`https://www.congress.gov/member/${legislator.full_name.toLowerCase().replace(/[^a-z0-9]/g, '-')}/${legislator.bioguide_id}?q=%7B%22sponsorship%22%3A%22sponsored%22%7D`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block mt-4 text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      View all {legislation.sponsored_count} sponsored bills on Congress.gov →
-                    </a>
-                  </div>
-                )}
               </div>
-            ) : (
-              <div className="text-gray-500 text-sm">Unable to load legislation data. Make sure your Congress.gov API key is configured.</div>
-            )}
-          </div>
 
-          {/* Committee Assignments */}
-          {committees && (committees.committees.length > 0 || committees.subcommittees.length > 0) && (
-            <div className="border-t border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Committee Assignments</h2>
-              
-              {committees.committees.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-                    Committees ({committees.committees.length})
+              {/* Details */}
+              <div className="px-6 pb-6 space-y-6">
+                {/* Quick Info */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500 uppercase">State</div>
+                    <div className="font-medium text-gray-900">{STATE_NAMES[legislator.state]}</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500 uppercase">
+                      {legislator.chamber === "Senate" ? "Class" : "District"}
+                    </div>
+                    <div className="font-medium text-gray-900">
+                      {legislator.chamber === "Senate"
+                        ? `Class ${legislator.senate_class}`
+                        : legislator.district === 0 ? "At-Large" : `District ${legislator.district}`}
+                    </div>
+                  </div>
+                  {legislator.first_term_start && (
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 uppercase">Entered Congress</div>
+                      <div className="font-medium text-gray-900">{new Date(legislator.first_term_start).getFullYear()}</div>
+                    </div>
+                  )}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500 uppercase">Terms Served</div>
+                    <div className="font-medium text-gray-900">{formatTermCount(legislator)}</div>
+                  </div>
+                  {legislator.first_term_start && (
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 uppercase">Years in Congress</div>
+                      <div className="font-medium text-gray-900">{calculateYearsOfService(legislator.first_term_start)}</div>
+                    </div>
+                  )}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500 uppercase">Term Ends</div>
+                    <div className="font-medium text-gray-900">{formatDate(legislator.term_end)}</div>
+                  </div>
+                  {legislator.birthday && (
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-500 uppercase">Age</div>
+                      <div className="font-medium text-gray-900">{calculateAge(legislator.birthday)} years old</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Legislative Activity */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                    Legislative Activity
+                    <span className="ml-2 text-xs font-normal normal-case bg-gray-100 px-2 py-0.5 rounded">
+                      Live from Congress.gov
+                    </span>
                   </h3>
-                  <div className="space-y-2">
-                    {committees.committees.map((committee, idx) => (
-                      <div 
-                        key={idx}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <span className="font-medium text-gray-900">
-                            {committee.committee_name}
-                          </span>
+                  
+                  {legislationLoading ? (
+                    <div className="text-gray-500 text-sm">Loading...</div>
+                  ) : legislation ? (
+                    <div>
+                      <div className="grid grid-cols-3 gap-3 mb-4">
+                        <div className="bg-blue-50 rounded-lg p-3 text-center">
+                          <div className="text-2xl font-bold text-blue-700">{legislation.sponsored_count}</div>
+                          <div className="text-xs text-blue-600">Sponsored</div>
+                        </div>
+                        <div className="bg-green-50 rounded-lg p-3 text-center">
+                          <div className="text-2xl font-bold text-green-700">{legislation.cosponsored_count}</div>
+                          <div className="text-xs text-green-600">Cosponsored</div>
+                        </div>
+                        <div className="bg-amber-50 rounded-lg p-3 text-center">
+                          <div className="text-2xl font-bold text-amber-700">{legislation.enacted_count || 0}</div>
+                          <div className="text-xs text-amber-600">Signed into Law</div>
+                        </div>
+                      </div>
+
+                      {legislation.recent_enacted && legislation.recent_enacted.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-xs text-gray-500 mb-2">Recent Bills Signed into Law</div>
+                          <div className="space-y-2">
+                            {legislation.recent_enacted.slice(0, 3).map((bill, idx) => (
+                              <a
+                                key={idx}
+                                href={getBillUrl(bill)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block p-2 bg-amber-50 rounded hover:bg-amber-100 transition-colors text-sm border border-amber-200"
+                              >
+                                <span className="font-medium text-amber-800">{bill.type || "Bill"}.{bill.number || "?"}</span>
+                                {bill.title && (
+                                  <span className="text-gray-600 ml-1">— {bill.title.slice(0, 50)}...</span>
+                                )}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {legislation.recent_sponsored.length > 0 && (
+                        <div>
+                          <div className="text-xs text-gray-500 mb-2">Recent Sponsored Bills</div>
+                          <div className="space-y-2">
+                            {legislation.recent_sponsored.slice(0, 3).map((bill, idx) => (
+                              <a
+                                key={idx}
+                                href={getBillUrl(bill)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors text-sm"
+                              >
+                                <span className="font-medium">{bill.type || "Bill"}.{bill.number || "?"}</span>
+                                {bill.title && (
+                                  <span className="text-gray-600 ml-1">— {bill.title.slice(0, 60)}...</span>
+                                )}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-gray-500 text-sm">Unable to load legislation data</div>
+                  )}
+                </div>
+
+                {/* Committees */}
+                {committees && committees.committees.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                      Committees ({committees.committees.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {committees.committees.map((committee, idx) => (
+                        <div key={idx} className="p-2 bg-gray-50 rounded-lg">
+                          <span className="font-medium text-sm text-gray-900">{committee.committee_name}</span>
                           {committee.title && (
-                            <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full font-medium">
+                            <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">
                               {committee.title}
                             </span>
                           )}
                         </div>
-                        {committee.rank && (
-                          <span className="text-sm text-gray-500">
-                            Rank #{committee.rank}
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {committees.subcommittees.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-                    Subcommittees ({committees.subcommittees.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {visibleSubcommittees.map((sub, idx) => (
-                      <div 
-                        key={idx}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <span className="font-medium text-gray-900">
-                            {sub.committee_name}
-                          </span>
+                {/* Subcommittees */}
+                {committees && committees.subcommittees.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                      Subcommittees ({committees.subcommittees.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {visibleSubcommittees.map((sub, idx) => (
+                        <div key={idx} className="p-2 bg-gray-50 rounded-lg">
+                          <span className="font-medium text-sm text-gray-900">{sub.committee_name}</span>
                           {sub.title && (
-                            <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full font-medium">
+                            <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">
                               {sub.title}
                             </span>
                           )}
-                          {sub.parent_committee_name && (
-                            <div className="text-sm text-gray-500 mt-0.5">
-                              {sub.parent_committee_name}
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    {committees.subcommittees.length > 5 && (
+                      <button
+                        onClick={() => setShowAllSubcommittees(!showAllSubcommittees)}
+                        className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        {showAllSubcommittees ? "Show fewer" : `Show all ${committees.subcommittees.length}`}
+                      </button>
+                    )}
                   </div>
-                  {committees.subcommittees.length > 5 && (
-                    <button
-                      onClick={() => setShowAllSubcommittees(!showAllSubcommittees)}
-                      className="mt-3 text-sm text-blue-600 hover:text-blue-800"
+                )}
+
+                {/* External Links */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Research & Links</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {legislator.external_ids?.govtrack && (
+                      <a
+                        href={`https://www.govtrack.us/congress/members/${legislator.external_ids.govtrack}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-sm hover:bg-indigo-200 transition-colors"
+                      >
+                        GovTrack
+                      </a>
+                    )}
+                    {legislator.external_ids?.votesmart && (
+                      <a
+                        href={`https://justfacts.votesmart.org/candidate/${legislator.external_ids.votesmart}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200 transition-colors"
+                      >
+                        VoteSmart
+                      </a>
+                    )}
+                    {legislator.external_ids?.opensecrets && (
+                      <a
+                        href={`https://www.opensecrets.org/members-of-congress/summary?cid=${legislator.external_ids.opensecrets}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-sm hover:bg-amber-200 transition-colors"
+                      >
+                        OpenSecrets
+                      </a>
+                    )}
+                    {legislator.external_ids?.wikipedia && (
+                      <a
+                        href={`https://en.wikipedia.org/wiki/${legislator.external_ids.wikipedia}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+                      >
+                        Wikipedia
+                      </a>
+                    )}
+                    <a
+                      href={`https://www.congress.gov/member/${legislator.full_name.toLowerCase().replace(/[^a-z0-9]/g, '-')}/${legislator.bioguide_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors"
                     >
-                      {showAllSubcommittees 
-                        ? "Show fewer" 
-                        : `Show all ${committees.subcommittees.length} subcommittees`}
-                    </button>
-                  )}
+                      Congress.gov
+                    </a>
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* External Research Links */}
-          <div className="border-t border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Research & Analysis</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {legislator.external_ids?.govtrack && (
-                <a
-                  href={`https://www.govtrack.us/congress/members/${legislator.external_ids.govtrack}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center p-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-100 transition-colors"
-                >
-                  <div className="flex-shrink-0 w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    GT
+                {/* Social Media */}
+                {(legislator.external_ids?.twitter || legislator.external_ids?.youtube || legislator.external_ids?.facebook) && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Social Media</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {legislator.external_ids?.twitter && (
+                        <a
+                          href={`https://twitter.com/${legislator.external_ids.twitter}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-sky-100 text-sky-700 rounded-lg text-sm hover:bg-sky-200 transition-colors"
+                        >
+                          𝕏 / Twitter
+                        </a>
+                      )}
+                      {legislator.external_ids?.youtube && (
+                        <a
+                          href={`https://www.youtube.com/${legislator.external_ids.youtube}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200 transition-colors"
+                        >
+                          YouTube
+                        </a>
+                      )}
+                      {legislator.external_ids?.facebook && (
+                        <a
+                          href={`https://www.facebook.com/${legislator.external_ids.facebook}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 transition-colors"
+                        >
+                          Facebook
+                        </a>
+                      )}
+                    </div>
                   </div>
-                  <div className="ml-3">
-                    <div className="font-medium text-gray-900">GovTrack</div>
-                    <div className="text-xs text-gray-500">Voting analysis</div>
-                  </div>
-                </a>
-              )}
-              
-              {legislator.external_ids?.votesmart && (
-                <a
-                  href={`https://justfacts.votesmart.org/candidate/${legislator.external_ids.votesmart}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center p-4 bg-green-50 hover:bg-green-100 rounded-lg border border-green-100 transition-colors"
-                >
-                  <div className="flex-shrink-0 w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    VS
-                  </div>
-                  <div className="ml-3">
-                    <div className="font-medium text-gray-900">VoteSmart</div>
-                    <div className="text-xs text-gray-500">Positions & ratings</div>
-                  </div>
-                </a>
-              )}
-
-              {legislator.external_ids?.opensecrets && (
-                <a
-                  href={`https://www.opensecrets.org/members-of-congress/summary?cid=${legislator.external_ids.opensecrets}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center p-4 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-100 transition-colors"
-                >
-                  <div className="flex-shrink-0 w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center text-white font-bold">
-                    OS
-                  </div>
-                  <div className="ml-3">
-                    <div className="font-medium text-gray-900">OpenSecrets</div>
-                    <div className="text-xs text-gray-500">Campaign finance</div>
-                  </div>
-                </a>
-              )}
-            </div>
-          </div>
-
-          {/* External Links */}
-          {legislator.external_ids && (
-            <div className="border-t border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Learn More</h2>
-              <div className="flex flex-wrap gap-3">
-                {legislator.external_ids.wikipedia && (
-                  <a
-                    href={`https://en.wikipedia.org/wiki/${legislator.external_ids.wikipedia}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
-                  >
-                    Wikipedia
-                  </a>
                 )}
-                {legislator.external_ids.ballotpedia && (
-                  <a
-                    href={`https://ballotpedia.org/${legislator.external_ids.ballotpedia}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
-                  >
-                    Ballotpedia
-                  </a>
-                )}
-                <a
-                  href={`https://www.congress.gov/member/${legislator.full_name.toLowerCase().replace(/[^a-z0-9]/g, '-')}/${legislator.bioguide_id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
-                >
-                  Congress.gov Profile
-                </a>
               </div>
             </div>
           )}
         </div>
       </div>
-    </main>
+    </>
   );
 }

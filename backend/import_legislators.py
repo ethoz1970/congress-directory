@@ -9,6 +9,7 @@ db = firestore.client()
 
 # Fetch current legislators from @unitedstates project
 DATA_URL = "https://unitedstates.github.io/congress-legislators/legislators-current.json"
+SOCIAL_URL = "https://unitedstates.github.io/congress-legislators/legislators-social-media.json"
 
 def fetch_legislators():
     """Fetch current legislators from the @unitedstates project."""
@@ -17,7 +18,21 @@ def fetch_legislators():
     response.raise_for_status()
     return response.json()
 
-def extract_legislator_data(legislator):
+def fetch_social_media():
+    """Fetch social media data from the @unitedstates project."""
+    print("Fetching social media data...")
+    response = requests.get(SOCIAL_URL)
+    response.raise_for_status()
+    data = response.json()
+    # Create lookup by bioguide_id
+    social_lookup = {}
+    for entry in data:
+        bioguide = entry.get("id", {}).get("bioguide")
+        if bioguide:
+            social_lookup[bioguide] = entry.get("social", {})
+    return social_lookup
+
+def extract_legislator_data(legislator, social_lookup):
     """Extract relevant fields for a legislator from the raw data."""
     
     # Get the most recent term
@@ -48,8 +63,12 @@ def extract_legislator_data(legislator):
     bio = legislator.get("bio", {})
     ids = legislator.get("id", {})
     
+    # Get social media data
+    bioguide_id = ids.get("bioguide")
+    social = social_lookup.get(bioguide_id, {})
+    
     data = {
-        "bioguide_id": ids.get("bioguide"),
+        "bioguide_id": bioguide_id,
         "first_name": name.get("first"),
         "last_name": name.get("last"),
         "full_name": name.get("official_full"),
@@ -77,6 +96,11 @@ def extract_legislator_data(legislator):
             "votesmart": ids.get("votesmart"),
             "wikipedia": ids.get("wikipedia"),
             "ballotpedia": ids.get("ballotpedia"),
+            "twitter": social.get("twitter"),
+            "youtube": social.get("youtube"),
+            "youtube_id": social.get("youtube_id"),
+            "facebook": social.get("facebook"),
+            "instagram": social.get("instagram"),
         }
     }
     
@@ -95,11 +119,12 @@ def import_legislators():
     """Import all current legislators into Firestore."""
     
     raw_legislators = fetch_legislators()
+    social_lookup = fetch_social_media()
     
     # Transform all legislators
     legislators = []
     for leg in raw_legislators:
-        legislator_data = extract_legislator_data(leg)
+        legislator_data = extract_legislator_data(leg, social_lookup)
         if legislator_data:
             legislators.append(legislator_data)
     
@@ -139,4 +164,3 @@ def import_legislators():
 
 if __name__ == "__main__":
     import_legislators()
-
