@@ -4,6 +4,9 @@ import { useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { API_URL } from "../lib/api";
 import SlideOutPanel from "./components/SlideOutPanel";
+import UserMenu from "./components/UserMenu";
+import { useFavorites } from "../lib/useFavorites";
+import { useAuth } from "../lib/AuthContext";
 
 interface Legislator {
   id: string;
@@ -109,10 +112,13 @@ function getYearsInCongressBucket(firstTermStart?: string): string {
 function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
   
   const [legislators, setLegislators] = useState<Legislator[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     chamber: [],
     state: [],
@@ -215,7 +221,8 @@ function HomeContent() {
       const partyMatch = filters.party.length === 0 || filters.party.includes(legislator.party);
       const genderMatch = filters.gender.length === 0 || filters.gender.includes(legislator.gender);
       const yearsMatch = filters.yearsInCongress.length === 0 || filters.yearsInCongress.includes(getYearsInCongressBucket(legislator.first_term_start));
-      return chamberMatch && stateMatch && partyMatch && genderMatch && yearsMatch;
+      const favoritesMatch = !showFavoritesOnly || isFavorite(legislator.bioguide_id);
+      return chamberMatch && stateMatch && partyMatch && genderMatch && yearsMatch && favoritesMatch;
     });
 
     // Sort the filtered results
@@ -250,7 +257,7 @@ function HomeContent() {
     });
 
     return sorted;
-  }, [legislators, filters, sortBy, sortDirection]);
+  }, [legislators, filters, sortBy, sortDirection, showFavoritesOnly, favorites]);
 
   const toggleFilter = (filterType: keyof Filters, value: string) => {
     const current = filters[filterType];
@@ -609,23 +616,58 @@ function HomeContent() {
       {/* Sticky Header */}
       <div className="sticky top-0 z-20 bg-gray-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            {/* Hamburger menu button */}
-            <button
-              onClick={() => setFiltersOpen(true)}
-              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg"
-              aria-label="Open filters"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Poly Sci Fi</h1>
-              <p className="text-gray-600">
-                {getFilterDescription()} 
-                <span className="text-gray-400 ml-1">({filteredLegislators.length})</span>
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Hamburger menu button */}
+              <button
+                onClick={() => setFiltersOpen(true)}
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg"
+                aria-label="Open filters"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Poly Sci Fi</h1>
+                <p className="text-gray-600">
+                  {getFilterDescription()} 
+                  <span className="text-gray-400 ml-1">({filteredLegislators.length})</span>
+                </p>
+              </div>
+            </div>
+                        <div className="flex items-center gap-3">
+              {user && (
+                <button
+                  onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    showFavoritesOnly
+                      ? "bg-red-100 text-red-700"
+                      : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <svg
+                    className={`w-5 h-5 ${showFavoritesOnly ? "fill-red-500" : "fill-none stroke-current"}`}
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                    />
+                  </svg>
+                  {showFavoritesOnly ? "Showing Favorites" : "Favorites"}
+                  {favorites.size > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                      showFavoritesOnly ? "bg-red-200" : "bg-gray-200"
+                    }`}>
+                      {favorites.size}
+                    </span>
+                  )}
+                </button>
+              )}
+              <UserMenu />
             </div>
           </div>
         </div>
@@ -703,10 +745,35 @@ function HomeContent() {
                 {filteredLegislators.map((legislator) => (
                   <div
                     key={legislator.id}
-                    onClick={() => setSelectedLegislator(legislator.bioguide_id)}
-                    className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer"
+                    className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer relative"
                   >
-                    <div className="flex gap-4">
+                    {/* Favorite button */}
+                    {user && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(legislator.bioguide_id);
+                        }}
+                        className="absolute top-2 right-2 p-2 rounded-full hover:bg-gray-100 transition-colors z-10"
+                        aria-label={isFavorite(legislator.bioguide_id) ? "Remove from favorites" : "Add to favorites"}
+                      >
+                        <svg
+                          className={`w-6 h-6 ${isFavorite(legislator.bioguide_id) ? "fill-red-500 stroke-red-500" : "fill-none stroke-gray-400 hover:stroke-red-400"}`}
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                    <div 
+                      className="flex gap-4"
+                      onClick={() => setSelectedLegislator(legislator.bioguide_id)}
+                    >
                       <div className="flex-shrink-0">
                         <img
                           src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
@@ -725,7 +792,7 @@ function HomeContent() {
                             </h3>
                             <p className="text-gray-600">{getSubtitle(legislator)}</p>
                           </div>
-                          <div className="flex gap-2 flex-shrink-0">
+                          <div className="flex gap-2 flex-shrink-0 mr-8">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${CHAMBER_COLORS[legislator.chamber] || "bg-gray-100 text-gray-800"}`}>
                               {legislator.chamber}
                             </span>
@@ -751,14 +818,43 @@ function HomeContent() {
                 {filteredLegislators.map((legislator) => (
                   <div
                     key={legislator.id}
-                    onClick={() => setSelectedLegislator(legislator.bioguide_id)}
                     className="relative rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden cursor-pointer aspect-[3/4]"
                   >
+                    {/* Favorite button */}
+                    {user && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(legislator.bioguide_id);
+                        }}
+                        className="absolute top-2 left-2 p-1.5 rounded-full bg-black/30 hover:bg-black/50 transition-colors z-10"
+                        aria-label={isFavorite(legislator.bioguide_id) ? "Remove from favorites" : "Add to favorites"}
+                      >
+                        <svg
+                          className={`w-5 h-5 ${isFavorite(legislator.bioguide_id) ? "fill-red-500 stroke-red-500" : "fill-none stroke-white hover:stroke-red-300"}`}
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                    
+                    {/* Clickable area for opening panel */}
+                    <div 
+                      className="absolute inset-0"
+                      onClick={() => setSelectedLegislator(legislator.bioguide_id)}
+                    />
+                    
                     {/* Full image background */}
                     <img
                       src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
                       alt={legislator.full_name}
-                      className="absolute inset-0 w-full h-full object-cover bg-gray-200"
+                      className="absolute inset-0 w-full h-full object-cover bg-gray-200 pointer-events-none"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x400?text=No+Photo";
                       }}
@@ -766,7 +862,7 @@ function HomeContent() {
                     
                     {/* Party color triangle in upper right with chamber letter */}
                     <div 
-                      className={`absolute top-0 right-0 w-0 h-0 border-t-[60px] border-l-[60px] border-l-transparent ${
+                      className={`absolute top-0 right-0 w-0 h-0 border-t-[60px] border-l-[60px] border-l-transparent pointer-events-none ${
                         legislator.party === "Republican" 
                           ? "border-t-red-600" 
                           : legislator.party === "Democrat" 
@@ -774,12 +870,12 @@ function HomeContent() {
                             : "border-t-purple-600"
                       }`}
                     />
-                    <span className="absolute top-1 right-1 text-white text-xs font-bold">
+                    <span className="absolute top-1 right-1 text-white text-xs font-bold pointer-events-none">
                       {legislator.chamber === "Senate" ? "S" : "R"}
                     </span>
                     
                     {/* Gradient overlay at bottom */}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent pt-16 pb-3 px-3">
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent pt-16 pb-3 px-3 pointer-events-none">
                       <h3 className="font-semibold text-white truncate">{legislator.full_name}</h3>
                       <p className="text-sm text-gray-200">{STATE_NAMES[legislator.state] || legislator.state}</p>
                     </div>
