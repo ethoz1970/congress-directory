@@ -36,6 +36,9 @@ interface Legislator {
     votesmart?: number;
     wikipedia?: string;
     ballotpedia?: string;
+    twitter?: string;
+    youtube?: string;
+    facebook?: string;
   };
 }
 
@@ -336,7 +339,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
             <div>
               {/* Header with photo */}
               <div className="relative">
-                <div className={`h-40 ${
+                <div className={`h-52 ${
                   legislator.party === "Republican" 
                     ? "bg-gradient-to-r from-red-600 to-red-700"
                     : legislator.party === "Democrat"
@@ -344,7 +347,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                       : "bg-gradient-to-r from-purple-600 to-purple-700"
                 }`} />
                 <div className="px-6 pb-4">
-                  <div className="relative -mt-28 flex items-end gap-5">
+                  <div className="relative -mt-44 flex items-start gap-5">
                     <img
                       src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
                       alt={legislator.full_name}
@@ -353,28 +356,25 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                         (e.target as HTMLImageElement).src = "https://via.placeholder.com/256x320?text=No+Photo";
                       }}
                     />
-                    <div className="pb- flex-1">
-
-                             {/* Tags */}
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${CHAMBER_COLORS[legislator.chamber]}`}>
-                          {legislator.chamber}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${PARTY_COLORS[legislator.party]}`}>
-                          {legislator.party}
-                        </span>
+                    <div className="flex-1 pt-2">
+                      {/* Tags and name in colored section - aligned with top of photo */}
+                      <div className="mb-4">
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30">
+                            {legislator.chamber}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30">
+                            {legislator.party}
+                          </span>
+                        </div>
+                        <h2 className="text-2xl font-bold text-white">
+                          {legislator.full_name}
+                        </h2>
+                        <p className="text-white/80">{position}</p>
                       </div>
-
-
-                      {/* Contact info at top */}
-                      <div className="mb-3 space-y-1">
-
-                                              {/* Name and position */}
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        {legislator.full_name}
-                      </h2>
-                      <p className="text-gray-600">{position}</p>
-
+                      
+                      {/* Contact info in white section */}
+                      <div className="mt-8 space-y-1">
                         {legislator.phone && (
                           <a href={`tel:${legislator.phone}`} className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
                             📞 {legislator.phone}
@@ -396,10 +396,6 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                           </a>
                         )}
                       </div>
-                      
-                 
-                      
-
                     </div>
                   </div>
                 </div>
@@ -632,6 +628,45 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                     </a>
                   </div>
                 </div>
+
+                {/* Social Media */}
+                {(legislator.external_ids?.twitter || legislator.external_ids?.youtube || legislator.external_ids?.facebook) && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Social Media</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {legislator.external_ids?.twitter && (
+                        <a
+                          href={`https://twitter.com/${legislator.external_ids.twitter}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-sky-100 text-sky-700 rounded-lg text-sm hover:bg-sky-200 transition-colors"
+                        >
+                          𝕏 / Twitter
+                        </a>
+                      )}
+                      {legislator.external_ids?.youtube && (
+                        <a
+                          href={`https://www.youtube.com/${legislator.external_ids.youtube}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm hover:bg-red-200 transition-colors"
+                        >
+                          YouTube
+                        </a>
+                      )}
+                      {legislator.external_ids?.facebook && (
+                        <a
+                          href={`https://www.facebook.com/${legislator.external_ids.facebook}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200 transition-colors"
+                        >
+                          Facebook
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
