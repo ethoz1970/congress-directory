@@ -1,0 +1,574 @@
+"use client";
+
+import { useEffect, useState, useMemo } from "react";
+import { API_URL } from "../lib/api";
+import SlideOutPanel from "./components/SlideOutPanel";
+
+interface Legislator {
+  id: string;
+  bioguide_id: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  nickname?: string;
+  party: string;
+  caucus?: string;
+  state: string;
+  chamber: string;
+  term_start: string;
+  term_end: string;
+  birthday: string;
+  gender: string;
+  phone: string;
+  office: string;
+  website: string;
+  contact_form: string;
+  state_rank?: string;
+  senate_class?: number;
+  district?: number;
+  first_term_start?: string;
+}
+
+interface Filters {
+  chamber: string[];
+  state: string[];
+  party: string[];
+  gender: string[];
+  yearsInCongress: string[];
+}
+
+const STATE_NAMES: Record<string, string> = {
+  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+  CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
+  HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa",
+  KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
+  MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri",
+  MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
+  NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota", OH: "Ohio",
+  OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+  SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
+  VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
+  AS: "American Samoa", DC: "District of Columbia", GU: "Guam", MP: "Northern Mariana Islands",
+  PR: "Puerto Rico", VI: "Virgin Islands"
+};
+
+const GENDER_LABELS: Record<string, string> = {
+  M: "Male",
+  F: "Female",
+};
+
+const PARTY_COLORS: Record<string, string> = {
+  Democrat: "bg-blue-100 text-blue-800",
+  Republican: "bg-red-100 text-red-800",
+  Independent: "bg-purple-100 text-purple-800",
+};
+
+const CHAMBER_COLORS: Record<string, string> = {
+  Senate: "bg-amber-100 text-amber-800",
+  House: "bg-emerald-100 text-emerald-800",
+};
+
+const YEARS_IN_CONGRESS_OPTIONS = [
+  { key: "under2", label: "Under 2 years", min: 0, max: 2 },
+  { key: "under5", label: "2-5 years", min: 2, max: 5 },
+  { key: "under10", label: "5-10 years", min: 5, max: 10 },
+  { key: "under20", label: "10-20 years", min: 10, max: 20 },
+  { key: "under30", label: "20-30 years", min: 20, max: 30 },
+  { key: "under40", label: "30-40 years", min: 30, max: 40 },
+  { key: "over40", label: "40+ years", min: 40, max: 999 },
+];
+
+function getYearsInCongress(firstTermStart?: string): number {
+  if (!firstTermStart) return 0;
+  const start = new Date(firstTermStart);
+  const today = new Date();
+  const years = (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+  return years;
+}
+
+function getYearsInCongressBucket(firstTermStart?: string): string {
+  const years = getYearsInCongress(firstTermStart);
+  for (const option of YEARS_IN_CONGRESS_OPTIONS) {
+    if (years >= option.min && years < option.max) {
+      return option.key;
+    }
+  }
+  return "under2";
+}
+
+export default function Home() {
+  const [legislators, setLegislators] = useState<Legislator[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<Filters>({
+    chamber: [],
+    state: [],
+    party: [],
+    gender: [],
+    yearsInCongress: [],
+  });
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [selectedLegislator, setSelectedLegislator] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    chamber: false,
+    party: false,
+    gender: false,
+    yearsInCongress: false,
+    state: false,
+  });
+
+  const toggleCollapse = (section: string) => {
+    setCollapsed(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/legislators`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch legislators");
+        return res.json();
+      })
+      .then((data) => {
+        setLegislators(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  const filterOptions = useMemo(() => {
+    const chambers = [...new Set(legislators.map((l) => l.chamber))].sort();
+    const states = [...new Set(legislators.map((l) => l.state))].sort();
+    const parties = [...new Set(legislators.map((l) => l.party))].sort();
+    const genders = [...new Set(legislators.map((l) => l.gender))].sort();
+    return { chambers, states, parties, genders };
+  }, [legislators]);
+
+  const filteredLegislators = useMemo(() => {
+    return legislators.filter((legislator) => {
+      const chamberMatch = filters.chamber.length === 0 || filters.chamber.includes(legislator.chamber);
+      const stateMatch = filters.state.length === 0 || filters.state.includes(legislator.state);
+      const partyMatch = filters.party.length === 0 || filters.party.includes(legislator.party);
+      const genderMatch = filters.gender.length === 0 || filters.gender.includes(legislator.gender);
+      const yearsMatch = filters.yearsInCongress.length === 0 || filters.yearsInCongress.includes(getYearsInCongressBucket(legislator.first_term_start));
+      return chamberMatch && stateMatch && partyMatch && genderMatch && yearsMatch;
+    });
+  }, [legislators, filters]);
+
+  const toggleFilter = (filterType: keyof Filters, value: string) => {
+    setFilters((prev) => {
+      const current = prev[filterType];
+      const updated = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      return { ...prev, [filterType]: updated };
+    });
+  };
+
+  const clearFilters = () => {
+    setFilters({ chamber: [], state: [], party: [], gender: [], yearsInCongress: [] });
+  };
+
+  const getCounts = (filterType: keyof Filters) => {
+    const counts: Record<string, number> = {};
+    legislators.forEach((legislator) => {
+      const passesOtherFilters = Object.entries(filters).every(([key, values]) => {
+        if (key === filterType) return true;
+        if (values.length === 0) return true;
+        if (key === "yearsInCongress") {
+          return values.includes(getYearsInCongressBucket(legislator.first_term_start));
+        }
+        return values.includes(legislator[key as keyof Legislator] as string);
+      });
+      if (passesOtherFilters) {
+        if (filterType === "yearsInCongress") {
+          const bucket = getYearsInCongressBucket(legislator.first_term_start);
+          counts[bucket] = (counts[bucket] || 0) + 1;
+        } else {
+          const value = legislator[filterType as keyof Legislator] as string;
+          counts[value] = (counts[value] || 0) + 1;
+        }
+      }
+    });
+    return counts;
+  };
+
+  const getSubtitle = (legislator: Legislator) => {
+    if (legislator.chamber === "Senate") {
+      return `${STATE_NAMES[legislator.state] || legislator.state} • ${legislator.state_rank || ""} Senator`;
+    } else {
+      const district = legislator.district === 0 ? "At-Large" : `District ${legislator.district}`;
+      return `${STATE_NAMES[legislator.state] || legislator.state} • ${district}`;
+    }
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <p className="text-xl">Loading legislators...</p>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <p className="text-xl text-red-600">Error: {error}</p>
+      </main>
+    );
+  }
+
+  const chamberCounts = getCounts("chamber");
+  const stateCounts = getCounts("state");
+  const partyCounts = getCounts("party");
+  const genderCounts = getCounts("gender");
+  const yearsCounts = getCounts("yearsInCongress");
+  const hasActiveFilters = filters.chamber.length > 0 || filters.state.length > 0 || filters.party.length > 0 || filters.gender.length > 0 || filters.yearsInCongress.length > 0;
+
+  return (
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">U.S. Congress Directory</h1>
+
+        <div className="flex gap-8">
+          {/* Filters Sidebar */}
+          <aside className="w-64 flex-shrink-0">
+            <div className="bg-white rounded-lg shadow p-4 sticky top-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Filters</h2>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+
+              {/* Chamber Filter */}
+              <div className="mb-6">
+                <button 
+                  onClick={() => toggleCollapse('chamber')}
+                  className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                >
+                  <span>Chamber</span>
+                  <span className="text-gray-400">{collapsed.chamber ? '+' : '−'}</span>
+                </button>
+                {!collapsed.chamber && (
+                  <div className="space-y-2">
+                    {filterOptions.chambers.map((chamber) => (
+                      <label key={chamber} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.chamber.includes(chamber)}
+                          onChange={() => toggleFilter("chamber", chamber)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{chamber}</span>
+                        <span className="text-sm text-gray-400 ml-auto">
+                          ({chamberCounts[chamber] || 0})
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Party Filter */}
+              <div className="mb-6">
+                <button 
+                  onClick={() => toggleCollapse('party')}
+                  className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                >
+                  <span>Party</span>
+                  <span className="text-gray-400">{collapsed.party ? '+' : '−'}</span>
+                </button>
+                {!collapsed.party && (
+                  <div className="space-y-2">
+                    {filterOptions.parties.map((party) => (
+                      <label key={party} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.party.includes(party)}
+                          onChange={() => toggleFilter("party", party)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{party}</span>
+                        <span className="text-sm text-gray-400 ml-auto">
+                          ({partyCounts[party] || 0})
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Gender Filter */}
+              <div className="mb-6">
+                <button 
+                  onClick={() => toggleCollapse('gender')}
+                  className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                >
+                  <span>Gender</span>
+                  <span className="text-gray-400">{collapsed.gender ? '+' : '−'}</span>
+                </button>
+                {!collapsed.gender && (
+                  <div className="space-y-2">
+                    {filterOptions.genders.map((gender) => (
+                      <label key={gender} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.gender.includes(gender)}
+                          onChange={() => toggleFilter("gender", gender)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{GENDER_LABELS[gender] || gender}</span>
+                        <span className="text-sm text-gray-400 ml-auto">
+                          ({genderCounts[gender] || 0})
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Years in Congress Filter */}
+              <div className="mb-6">
+                <button 
+                  onClick={() => toggleCollapse('yearsInCongress')}
+                  className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                >
+                  <span>Years in Congress</span>
+                  <span className="text-gray-400">{collapsed.yearsInCongress ? '+' : '−'}</span>
+                </button>
+                {!collapsed.yearsInCongress && (
+                  <div className="space-y-2">
+                    {YEARS_IN_CONGRESS_OPTIONS.map((option) => (
+                      <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.yearsInCongress.includes(option.key)}
+                          onChange={() => toggleFilter("yearsInCongress", option.key)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{option.label}</span>
+                        <span className="text-sm text-gray-400 ml-auto">
+                          ({yearsCounts[option.key] || 0})
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* State Filter */}
+              <div>
+                <button 
+                  onClick={() => toggleCollapse('state')}
+                  className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                >
+                  <span>State</span>
+                  <span className="text-gray-400">{collapsed.state ? '+' : '−'}</span>
+                </button>
+                {!collapsed.state && (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {filterOptions.states.map((state) => (
+                      <label key={state} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.state.includes(state)}
+                          onChange={() => toggleFilter("state", state)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{STATE_NAMES[state] || state}</span>
+                        <span className="text-sm text-gray-400 ml-auto">
+                          ({stateCounts[state] || 0})
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </aside>
+
+          {/* Results */}
+          <div className="flex-1">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {/* Mini pie chart */}
+                <div className="relative w-12 h-12">
+                  <svg viewBox="0 0 36 36" className="w-12 h-12 -rotate-90">
+                    {/* Background circle */}
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="16"
+                      fill="none"
+                      stroke="#e5e7eb"
+                      strokeWidth="3"
+                    />
+                    {/* Filled portion */}
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="16"
+                      fill="none"
+                      stroke="#3b82f6"
+                      strokeWidth="3"
+                      strokeDasharray={`${(filteredLegislators.length / legislators.length) * 100} 100`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-semibold text-gray-700">
+                      {Math.round((filteredLegislators.length / legislators.length) * 100)}%
+                    </span>
+                  </div>
+                </div>
+                <span className="text-gray-600">
+                  Showing {filteredLegislators.length} of {legislators.length} members
+                </span>
+              </div>
+              
+              {/* View Toggle */}
+              <div className="flex items-center gap-1 bg-white rounded-lg shadow px-1 py-1">
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === "list"
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  List
+                </button>
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === "grid"
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Grid
+                </button>
+              </div>
+            </div>
+
+            {/* List View */}
+            {viewMode === "list" && (
+              <div className="space-y-4">
+                {filteredLegislators.map((legislator) => (
+                  <div
+                    key={legislator.id}
+                    onClick={() => setSelectedLegislator(legislator.bioguide_id)}
+                    className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  >
+                    <div className="flex gap-4">
+                      <div className="flex-shrink-0">
+                        <img
+                          src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                          alt={legislator.full_name}
+                          className="w-20 h-24 object-cover rounded bg-gray-200"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://via.placeholder.com/80x96?text=No+Photo";
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {legislator.full_name}
+                            </h3>
+                            <p className="text-gray-600">{getSubtitle(legislator)}</p>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${CHAMBER_COLORS[legislator.chamber] || "bg-gray-100 text-gray-800"}`}>
+                              {legislator.chamber}
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${PARTY_COLORS[legislator.party] || "bg-gray-100 text-gray-800"}`}>
+                              {legislator.party}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-2 text-sm text-gray-500">
+                          {legislator.phone && <span className="mr-4">📞 {legislator.phone}</span>}
+                          {legislator.office && <span>🏛️ {legislator.office}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Grid View */}
+            {viewMode === "grid" && (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredLegislators.map((legislator) => (
+                  <div
+                    key={legislator.id}
+                    onClick={() => setSelectedLegislator(legislator.bioguide_id)}
+                    className="relative rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden cursor-pointer aspect-[3/4]"
+                  >
+                    {/* Full image background */}
+                    <img
+                      src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                      alt={legislator.full_name}
+                      className="absolute inset-0 w-full h-full object-cover bg-gray-200"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x400?text=No+Photo";
+                      }}
+                    />
+                    
+                    {/* Party color triangle in upper right with chamber letter */}
+                    <div 
+                      className={`absolute top-0 right-0 w-0 h-0 border-t-[60px] border-l-[60px] border-l-transparent ${
+                        legislator.party === "Republican" 
+                          ? "border-t-red-600" 
+                          : legislator.party === "Democrat" 
+                            ? "border-t-blue-600" 
+                            : "border-t-purple-600"
+                      }`}
+                    />
+                    <span className="absolute top-1 right-1 text-white text-xs font-bold">
+                      {legislator.chamber === "Senate" ? "S" : "R"}
+                    </span>
+                    
+                    {/* Gradient overlay at bottom */}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent pt-16 pb-3 px-3">
+                      <h3 className="font-semibold text-white truncate">{legislator.full_name}</h3>
+                      <p className="text-sm text-gray-200">{STATE_NAMES[legislator.state] || legislator.state}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {filteredLegislators.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                No members match your filters.
+                <button
+                  onClick={clearFilters}
+                  className="block mx-auto mt-2 text-blue-600 hover:text-blue-800"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Slide-out Panel */}
+      <SlideOutPanel
+        bioguideId={selectedLegislator}
+        onClose={() => setSelectedLegislator(null)}
+      />
+    </main>
+  );
+}
