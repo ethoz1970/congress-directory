@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { API_URL } from "../lib/api";
 import SlideOutPanel from "./components/SlideOutPanel";
 
@@ -96,7 +97,10 @@ function getYearsInCongressBucket(firstTermStart?: string): string {
   return "under2";
 }
 
-export default function Home() {
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
   const [legislators, setLegislators] = useState<Legislator[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,6 +120,30 @@ export default function Home() {
     yearsInCongress: false,
     state: false,
   });
+
+  // Initialize filters from URL on mount
+  useEffect(() => {
+    const chamber = searchParams.get("chamber")?.split(",").filter(Boolean) || [];
+    const state = searchParams.get("state")?.split(",").filter(Boolean) || [];
+    const party = searchParams.get("party")?.split(",").filter(Boolean) || [];
+    const gender = searchParams.get("gender")?.split(",").filter(Boolean) || [];
+    const yearsInCongress = searchParams.get("years")?.split(",").filter(Boolean) || [];
+    
+    setFilters({ chamber, state, party, gender, yearsInCongress });
+  }, [searchParams]);
+
+  // Update URL when filters change
+  const updateURL = (newFilters: Filters) => {
+    const params = new URLSearchParams();
+    if (newFilters.chamber.length > 0) params.set("chamber", newFilters.chamber.join(","));
+    if (newFilters.state.length > 0) params.set("state", newFilters.state.join(","));
+    if (newFilters.party.length > 0) params.set("party", newFilters.party.join(","));
+    if (newFilters.gender.length > 0) params.set("gender", newFilters.gender.join(","));
+    if (newFilters.yearsInCongress.length > 0) params.set("years", newFilters.yearsInCongress.join(","));
+    
+    const queryString = params.toString();
+    router.push(queryString ? `?${queryString}` : "/", { scroll: false });
+  };
 
   const toggleCollapse = (section: string) => {
     setCollapsed(prev => ({ ...prev, [section]: !prev[section] }));
@@ -157,17 +185,19 @@ export default function Home() {
   }, [legislators, filters]);
 
   const toggleFilter = (filterType: keyof Filters, value: string) => {
-    setFilters((prev) => {
-      const current = prev[filterType];
-      const updated = current.includes(value)
-        ? current.filter((v) => v !== value)
-        : [...current, value];
-      return { ...prev, [filterType]: updated };
-    });
+    const current = filters[filterType];
+    const updated = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
+    const newFilters = { ...filters, [filterType]: updated };
+    setFilters(newFilters);
+    updateURL(newFilters);
   };
 
   const clearFilters = () => {
-    setFilters({ chamber: [], state: [], party: [], gender: [], yearsInCongress: [] });
+    const newFilters = { chamber: [], state: [], party: [], gender: [], yearsInCongress: [] };
+    setFilters(newFilters);
+    updateURL(newFilters);
   };
 
   const getCounts = (filterType: keyof Filters) => {
@@ -570,5 +600,13 @@ export default function Home() {
         onClose={() => setSelectedLegislator(null)}
       />
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><p className="text-xl">Loading...</p></div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
