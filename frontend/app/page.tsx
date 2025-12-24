@@ -255,6 +255,51 @@ function HomeContent() {
     }
   };
 
+  const getFilterDescription = () => {
+    if (!hasActiveFilters) return "All Members of Congress";
+    
+    const parts: string[] = [];
+    
+    // Gender
+    if (filters.gender.length === 1) {
+      parts.push(filters.gender[0] === "F" ? "Female" : "Male");
+    }
+    
+    // Party
+    if (filters.party.length === 1) {
+      parts.push(filters.party[0] === "Democrat" ? "Democratic" : filters.party[0]);
+    } else if (filters.party.length > 1) {
+      parts.push(filters.party.join(" & "));
+    }
+    
+    // Chamber
+    if (filters.chamber.length === 1) {
+      parts.push(filters.chamber[0] === "Senate" ? "Senators" : "Representatives");
+    } else {
+      parts.push("Members");
+    }
+    
+    // State
+    if (filters.state.length === 1) {
+      parts.push(`from ${STATE_NAMES[filters.state[0]] || filters.state[0]}`);
+    } else if (filters.state.length > 1 && filters.state.length <= 3) {
+      const stateNames = filters.state.map(s => STATE_NAMES[s] || s);
+      parts.push(`from ${stateNames.join(", ")}`);
+    } else if (filters.state.length > 3) {
+      parts.push(`from ${filters.state.length} states`);
+    }
+    
+    // Years in Congress
+    if (filters.yearsInCongress.length === 1) {
+      const option = YEARS_IN_CONGRESS_OPTIONS.find(o => o.key === filters.yearsInCongress[0]);
+      if (option) {
+        parts.push(`with ${option.label.toLowerCase()} in Congress`);
+      }
+    }
+    
+    return parts.join(" ") || "Filtered Members";
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
@@ -473,12 +518,13 @@ function HomeContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Poly Sci Fi</h1>
-          {hasActiveFilters && (
-            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-              {filteredLegislators.length} of {legislators.length}
-            </span>
-          )}
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Poly Sci Fi</h1>
+            <p className="text-gray-600">
+              {getFilterDescription()} 
+              <span className="text-gray-400 ml-1">({filteredLegislators.length})</span>
+            </p>
+          </div>
         </div>
 
         <div>
