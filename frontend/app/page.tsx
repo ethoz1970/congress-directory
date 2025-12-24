@@ -28,6 +28,7 @@ interface Legislator {
   senate_class?: number;
   district?: number;
   first_term_start?: string;
+  total_terms?: number;
 }
 
 interface Filters {
