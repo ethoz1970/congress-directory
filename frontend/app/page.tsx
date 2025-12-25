@@ -92,7 +92,7 @@ const BILLS_ENACTED_OPTIONS = [
   { key: "atLeast1", label: "At least 1 bill", min: 1 },
   { key: "moreThan5", label: "More than 5 bills", min: 6 },
   { key: "moreThan10", label: "More than 10 bills", min: 11 },
-  { key: "moreThan20", label: "More than 20 bills", min: 21 },
+  { key: "moreThan25", label: "More than 25 bills", min: 26 },
 ];
 
 const SORT_OPTIONS = [
@@ -140,6 +140,15 @@ function getBillsEnactedBuckets(enactedCount?: number): string[] {
     }
   }
   return buckets;
+}
+
+function getBillsTriangleColor(enactedCount?: number): string | null {
+  const count = enactedCount || 0;
+  if (count === 0) return null; // No triangle
+  if (count >= 26) return "border-b-orange-500"; // 25+
+  if (count >= 11) return "border-b-yellow-400"; // 10+
+  if (count >= 6) return "border-b-gray-500"; // 5+
+  return "border-b-gray-300"; // 1+
 }
 
 function HomeContent() {
@@ -944,7 +953,7 @@ function HomeContent() {
                     
                     {/* Party color triangle in upper right with chamber letter */}
                     <div 
-                      className={`absolute top-0 right-0 w-0 h-0 border-t-[60px] border-l-[60px] border-l-transparent pointer-events-none ${
+                      className={`absolute top-0 right-0 w-0 h-0 border-t-[120px] border-l-[120px] border-l-transparent pointer-events-none ${
                         legislator.party === "Republican" 
                           ? "border-t-red-600" 
                           : legislator.party === "Democrat" 
@@ -952,9 +961,21 @@ function HomeContent() {
                             : "border-t-purple-600"
                       }`}
                     />
-                    <span className="absolute top-1 right-1 text-white text-xs font-bold pointer-events-none">
+                    <span className="absolute top-2 right-3 text-white text-3xl font-black pointer-events-none">
                       {legislator.chamber === "Senate" ? "S" : "R"}
                     </span>
+                    
+                    {/* Bills enacted triangle in lower right with count */}
+                    {getBillsTriangleColor(legislator.enacted_count) && (
+                      <>
+                        <div 
+                          className={`absolute bottom-0 right-0 w-0 h-0 border-b-[120px] border-l-[120px] border-l-transparent pointer-events-none ${getBillsTriangleColor(legislator.enacted_count)}`}
+                        />
+                        <span className="absolute bottom-2 right-3 text-white text-3xl font-black pointer-events-none drop-shadow-md">
+                          {legislator.enacted_count}
+                        </span>
+                      </>
+                    )}
                     
                     {/* Gradient overlay at bottom */}
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent pt-16 pb-3 px-3 pointer-events-none">
