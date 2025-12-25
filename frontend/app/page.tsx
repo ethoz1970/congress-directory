@@ -258,7 +258,7 @@ function HomeContent() {
       const partyMatch = filters.party.length === 0 || filters.party.includes(legislator.party);
       const genderMatch = filters.gender.length === 0 || filters.gender.includes(legislator.gender);
       const yearsMatch = filters.yearsInCongress.length === 0 || filters.yearsInCongress.includes(getYearsInCongressBucket(legislator.first_term_start));
-      const billsMatch = filters.billsEnacted.length === 0 || filters.billsEnacted.some(bucket => getBillsEnactedBuckets(legislator.enacted_count).includes(bucket));
+      const billsMatch = filters.billsEnacted.length === 0 || filters.billsEnacted.some((bucket: string) => getBillsEnactedBuckets(legislator.enacted_count).includes(bucket));
       const favoritesMatch = !showFavoritesOnly || isFavorite(legislator.bioguide_id);
       return chamberMatch && stateMatch && partyMatch && genderMatch && yearsMatch && billsMatch && favoritesMatch;
     });
@@ -329,7 +329,7 @@ function HomeContent() {
           return values.includes(getYearsInCongressBucket(legislator.first_term_start));
         }
         if (key === "billsEnacted") {
-          return values.some(bucket => getBillsEnactedBuckets(legislator.enacted_count).includes(bucket));
+          return values.some((bucket: string) => getBillsEnactedBuckets(legislator.enacted_count).includes(bucket));
         }
         return values.includes(legislator[key as keyof Legislator] as string);
       });
