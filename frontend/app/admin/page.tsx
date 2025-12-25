@@ -122,7 +122,7 @@ export default function AdminDashboard() {
         });
         
         usersSnapshot.forEach((doc) => {
-          const data = doc.to_dict ? doc.to_dict() : doc.data();
+          const data = doc.data();
           const createdAt = data.createdAt?.toDate?.() || null;
           const lastLogin = data.lastLogin?.toDate?.() || null;
           
