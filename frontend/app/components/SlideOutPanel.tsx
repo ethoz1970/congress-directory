@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { API_URL } from "../../lib/api";
+import { useFavorites } from "../../lib/useFavorites";
+import { useAuth } from "../../lib/AuthContext";
 
 interface Legislator {
   id: string;
@@ -220,6 +222,8 @@ function getBillUrl(bill: Bill): string {
 }
 
 export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProps) {
+  const { user } = useAuth();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const [legislator, setLegislator] = useState<Legislator | null>(null);
   const [committees, setCommittees] = useState<CommitteesData | null>(null);
   const [legislation, setLegislation] = useState<LegislationSummary | null>(null);
@@ -401,9 +405,30 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                             {legislator.party}
                           </span>
                         </div>
-                        <h2 className="text-2xl font-bold text-white">
-                          {legislator.full_name}
-                        </h2>
+                        <div className="flex items-center gap-3">
+                          <h2 className="text-2xl font-bold text-white">
+                            {legislator.full_name}
+                          </h2>
+                          {user && (
+                            <button
+                              onClick={() => toggleFavorite(legislator.bioguide_id)}
+                              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                              aria-label={isFavorite(legislator.bioguide_id) ? "Remove from favorites" : "Add to favorites"}
+                            >
+                              <svg
+                                className={`w-6 h-6 ${isFavorite(legislator.bioguide_id) ? "fill-red-500 stroke-red-500" : "fill-none stroke-white"}`}
+                                viewBox="0 0 24 24"
+                                strokeWidth={2}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                                />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                         <p className="text-white/80">{position}</p>
                       </div>
                       

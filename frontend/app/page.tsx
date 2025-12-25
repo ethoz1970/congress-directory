@@ -32,6 +32,9 @@ interface Legislator {
   district?: number;
   first_term_start?: string;
   total_terms?: number;
+  sponsored_count?: number;
+  cosponsored_count?: number;
+  enacted_count?: number;
 }
 
 interface Filters {
@@ -40,6 +43,7 @@ interface Filters {
   party: string[];
   gender: string[];
   yearsInCongress: string[];
+  billsEnacted: string[];
 }
 
 const STATE_NAMES: Record<string, string> = {
@@ -83,11 +87,21 @@ const YEARS_IN_CONGRESS_OPTIONS = [
   { key: "over40", label: "40+ years", min: 40, max: 999 },
 ];
 
+const BILLS_ENACTED_OPTIONS = [
+  { key: "none", label: "No bills", min: 0, max: 0 },
+  { key: "atLeast1", label: "At least 1 bill", min: 1 },
+  { key: "moreThan5", label: "More than 5 bills", min: 6 },
+  { key: "moreThan10", label: "More than 10 bills", min: 11 },
+  { key: "moreThan20", label: "More than 20 bills", min: 21 },
+];
+
 const SORT_OPTIONS = [
   { key: "name", label: "Name" },
   { key: "age", label: "Age" },
   { key: "terms", label: "Terms Served" },
   { key: "years", label: "Time in Congress" },
+  { key: "enacted", label: "Bills Enacted" },
+  { key: "sponsored", label: "Bills Sponsored" },
   { key: "state", label: "State" },
 ];
 
@@ -109,6 +123,25 @@ function getYearsInCongressBucket(firstTermStart?: string): string {
   return "under2";
 }
 
+function getBillsEnactedBuckets(enactedCount?: number): string[] {
+  const count = enactedCount || 0;
+  const buckets: string[] = [];
+  
+  // Handle "none" case
+  if (count === 0) {
+    buckets.push("none");
+    return buckets;
+  }
+  
+  // Handle other cases (cumulative)
+  for (const option of BILLS_ENACTED_OPTIONS) {
+    if (option.key !== "none" && count >= option.min) {
+      buckets.push(option.key);
+    }
+  }
+  return buckets;
+}
+
 function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -125,6 +158,7 @@ function HomeContent() {
     party: [],
     gender: [],
     yearsInCongress: [],
+    billsEnacted: [],
   });
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [selectedLegislator, setSelectedLegislator] = useState<string | null>(null);
@@ -137,6 +171,7 @@ function HomeContent() {
     party: false,
     gender: false,
     yearsInCongress: false,
+    billsEnacted: false,
     state: false,
   });
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -148,8 +183,9 @@ function HomeContent() {
     const party = searchParams.get("party")?.split(",").filter(Boolean) || [];
     const gender = searchParams.get("gender")?.split(",").filter(Boolean) || [];
     const yearsInCongress = searchParams.get("years")?.split(",").filter(Boolean) || [];
+    const billsEnacted = searchParams.get("enacted")?.split(",").filter(Boolean) || [];
     
-    setFilters({ chamber, state, party, gender, yearsInCongress });
+    setFilters({ chamber, state, party, gender, yearsInCongress, billsEnacted });
   }, [searchParams]);
 
   // Update URL when filters change
@@ -160,6 +196,7 @@ function HomeContent() {
     if (newFilters.party.length > 0) params.set("party", newFilters.party.join(","));
     if (newFilters.gender.length > 0) params.set("gender", newFilters.gender.join(","));
     if (newFilters.yearsInCongress.length > 0) params.set("years", newFilters.yearsInCongress.join(","));
+    if (newFilters.billsEnacted.length > 0) params.set("enacted", newFilters.billsEnacted.join(","));
     
     const queryString = params.toString();
     router.push(queryString ? `?${queryString}` : "/", { scroll: false });
@@ -221,8 +258,9 @@ function HomeContent() {
       const partyMatch = filters.party.length === 0 || filters.party.includes(legislator.party);
       const genderMatch = filters.gender.length === 0 || filters.gender.includes(legislator.gender);
       const yearsMatch = filters.yearsInCongress.length === 0 || filters.yearsInCongress.includes(getYearsInCongressBucket(legislator.first_term_start));
+      const billsMatch = filters.billsEnacted.length === 0 || filters.billsEnacted.some(bucket => getBillsEnactedBuckets(legislator.enacted_count).includes(bucket));
       const favoritesMatch = !showFavoritesOnly || isFavorite(legislator.bioguide_id);
-      return chamberMatch && stateMatch && partyMatch && genderMatch && yearsMatch && favoritesMatch;
+      return chamberMatch && stateMatch && partyMatch && genderMatch && yearsMatch && billsMatch && favoritesMatch;
     });
 
     // Sort the filtered results
@@ -245,6 +283,12 @@ function HomeContent() {
           const yearsA = getYearsInCongress(a.first_term_start);
           const yearsB = getYearsInCongress(b.first_term_start);
           comparison = yearsB - yearsA;
+          break;
+        case "enacted":
+          comparison = (b.enacted_count || 0) - (a.enacted_count || 0);
+          break;
+        case "sponsored":
+          comparison = (b.sponsored_count || 0) - (a.sponsored_count || 0);
           break;
         case "state":
           comparison = a.state.localeCompare(b.state);
@@ -270,7 +314,7 @@ function HomeContent() {
   };
 
   const clearFilters = () => {
-    const newFilters = { chamber: [], state: [], party: [], gender: [], yearsInCongress: [] };
+    const newFilters = { chamber: [], state: [], party: [], gender: [], yearsInCongress: [], billsEnacted: [] };
     setFilters(newFilters);
     updateURL(newFilters);
   };
@@ -284,12 +328,20 @@ function HomeContent() {
         if (key === "yearsInCongress") {
           return values.includes(getYearsInCongressBucket(legislator.first_term_start));
         }
+        if (key === "billsEnacted") {
+          return values.some(bucket => getBillsEnactedBuckets(legislator.enacted_count).includes(bucket));
+        }
         return values.includes(legislator[key as keyof Legislator] as string);
       });
       if (passesOtherFilters) {
         if (filterType === "yearsInCongress") {
           const bucket = getYearsInCongressBucket(legislator.first_term_start);
           counts[bucket] = (counts[bucket] || 0) + 1;
+        } else if (filterType === "billsEnacted") {
+          const buckets = getBillsEnactedBuckets(legislator.enacted_count);
+          buckets.forEach(bucket => {
+            counts[bucket] = (counts[bucket] || 0) + 1;
+          });
         } else {
           const value = legislator[filterType as keyof Legislator] as string;
           counts[value] = (counts[value] || 0) + 1;
@@ -374,7 +426,8 @@ function HomeContent() {
   const partyCounts = getCounts("party");
   const genderCounts = getCounts("gender");
   const yearsCounts = getCounts("yearsInCongress");
-  const hasActiveFilters = filters.chamber.length > 0 || filters.state.length > 0 || filters.party.length > 0 || filters.gender.length > 0 || filters.yearsInCongress.length > 0;
+  const billsEnactedCounts = getCounts("billsEnacted");
+  const hasActiveFilters = filters.chamber.length > 0 || filters.state.length > 0 || filters.party.length > 0 || filters.gender.length > 0 || filters.yearsInCongress.length > 0 || filters.billsEnacted.length > 0;
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -449,7 +502,7 @@ function HomeContent() {
               onClick={() => toggleCollapse('filtersSection')}
               className="flex items-center justify-between w-full p-3 bg-gray-100 rounded-lg font-semibold text-gray-800 hover:bg-gray-200"
             >
-              <span>Filters {hasActiveFilters && `(${filters.chamber.length + filters.party.length + filters.gender.length + filters.state.length + filters.yearsInCongress.length})`}</span>
+              <span>Filters {hasActiveFilters && `(${filters.chamber.length + filters.party.length + filters.gender.length + filters.state.length + filters.yearsInCongress.length + filters.billsEnacted.length})`}</span>
               <span className={`text-gray-500 transition-transform duration-200 ${collapsed.filtersSection ? '' : 'rotate-90'}`}>▶</span>
             </button>
             {!collapsed.filtersSection && (
@@ -514,6 +567,35 @@ function HomeContent() {
                           <span className="text-sm text-gray-700">{party}</span>
                           <span className="text-sm text-gray-400 ml-auto">
                             ({partyCounts[party] || 0})
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Bills Enacted Filter */}
+                <div className="mb-4">
+                  <button 
+                    onClick={() => toggleCollapse('billsEnacted')}
+                    className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                  >
+                    <span>Bills Enacted</span>
+                    <span className={`text-gray-400 transition-transform duration-200 ${collapsed.billsEnacted ? '' : 'rotate-90'}`}>▶</span>
+                  </button>
+                  {!collapsed.billsEnacted && (
+                    <div className="space-y-2 ml-2">
+                      {BILLS_ENACTED_OPTIONS.map((option) => (
+                        <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.billsEnacted.includes(option.key)}
+                            onChange={() => toggleFilter("billsEnacted", option.key)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{option.label}</span>
+                          <span className="text-sm text-gray-400 ml-auto">
+                            ({billsEnactedCounts[option.key] || 0})
                           </span>
                         </label>
                       ))}
