@@ -35,6 +35,8 @@ interface Legislator {
   sponsored_count?: number;
   cosponsored_count?: number;
   enacted_count?: number;
+  ideology_score?: number;
+  leadership_score?: number;
 }
 
 interface Filters {
@@ -102,6 +104,7 @@ const SORT_OPTIONS = [
   { key: "years", label: "Time in Congress" },
   { key: "enacted", label: "Bills Enacted" },
   { key: "sponsored", label: "Bills Sponsored" },
+  { key: "ideology", label: "Ideology" },
   { key: "state", label: "State" },
 ];
 
@@ -170,6 +173,7 @@ function HomeContent() {
     billsEnacted: [],
   });
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [gridSize, setGridSize] = useState<number>(3); // 1-5 scale, default middle
   const [selectedLegislator, setSelectedLegislator] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -298,6 +302,15 @@ function HomeContent() {
           break;
         case "sponsored":
           comparison = (b.sponsored_count || 0) - (a.sponsored_count || 0);
+          break;
+        case "ideology":
+          // Members without scores always at bottom
+          const hasIdeoA = a.ideology_score !== undefined && a.ideology_score !== null;
+          const hasIdeoB = b.ideology_score !== undefined && b.ideology_score !== null;
+          if (!hasIdeoA && !hasIdeoB) comparison = 0;
+          else if (!hasIdeoA) comparison = 1; // a goes to bottom
+          else if (!hasIdeoB) comparison = -1; // b goes to bottom
+          else comparison = a.ideology_score! - b.ideology_score!;
           break;
         case "state":
           comparison = a.state.localeCompare(b.state);
@@ -828,6 +841,22 @@ function HomeContent() {
                   Grid
                 </button>
               </div>
+              
+              {/* Grid Size Slider */}
+              {viewMode === "grid" && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Size:</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="4"
+                    value={gridSize}
+                    onChange={(e) => setGridSize(Number(e.target.value))}
+                    className="w-20 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
+                  <span className="text-xs text-gray-500 w-4">{gridSize}</span>
+                </div>
+              )}
             </div>
 
             {/* List View */}
@@ -905,7 +934,13 @@ function HomeContent() {
 
             {/* Grid View */}
             {viewMode === "grid" && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className={`grid gap-2 sm:gap-4 ${
+                gridSize === 1 ? "grid-cols-2" :
+                gridSize === 2 ? "grid-cols-3 md:grid-cols-4" :
+                gridSize === 3 ? "grid-cols-4 md:grid-cols-6 lg:grid-cols-8" :
+                gridSize === 4 ? "grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12" :
+                "grid-cols-8 md:grid-cols-10 lg:grid-cols-12"
+              }`}>
                 {filteredLegislators.map((legislator) => (
                   <div
                     key={legislator.id}
@@ -918,11 +953,13 @@ function HomeContent() {
                           e.stopPropagation();
                           toggleFavorite(legislator.bioguide_id);
                         }}
-                        className="absolute top-2 left-2 p-1.5 rounded-full bg-black/30 hover:bg-black/50 transition-colors z-10"
+                        className={`absolute top-1 left-1 rounded-full bg-black/30 hover:bg-black/50 transition-colors z-10 ${
+                          gridSize >= 4 ? "p-0.5" : "p-1.5"
+                        }`}
                         aria-label={isFavorite(legislator.bioguide_id) ? "Remove from favorites" : "Add to favorites"}
                       >
                         <svg
-                          className={`w-5 h-5 ${isFavorite(legislator.bioguide_id) ? "fill-red-500 stroke-red-500" : "fill-none stroke-white hover:stroke-red-300"}`}
+                          className={`${gridSize >= 4 ? "w-3 h-3" : "w-5 h-5"} ${isFavorite(legislator.bioguide_id) ? "fill-red-500 stroke-red-500" : "fill-none stroke-white hover:stroke-red-300"}`}
                           viewBox="0 0 24 24"
                           strokeWidth={2}
                         >
@@ -953,7 +990,13 @@ function HomeContent() {
                     
                     {/* Party color triangle in upper right with chamber letter */}
                     <div 
-                      className={`absolute top-0 right-0 w-0 h-0 border-t-[120px] border-l-[120px] border-l-transparent pointer-events-none ${
+                      className={`absolute top-0 right-0 w-0 h-0 border-l-transparent pointer-events-none ${
+                        gridSize === 1 ? "border-t-[120px] border-l-[120px]" :
+                        gridSize === 2 ? "border-t-[80px] border-l-[80px]" :
+                        gridSize === 3 ? "border-t-[60px] border-l-[60px]" :
+                        gridSize === 4 ? "border-t-[40px] border-l-[40px]" :
+                        "border-t-[30px] border-l-[30px]"
+                      } ${
                         legislator.party === "Republican" 
                           ? "border-t-red-600" 
                           : legislator.party === "Democrat" 
@@ -961,7 +1004,13 @@ function HomeContent() {
                             : "border-t-purple-600"
                       }`}
                     />
-                    <span className="absolute top-2 right-3 text-white text-3xl font-black pointer-events-none">
+                    <span className={`absolute pointer-events-none text-white font-black ${
+                      gridSize === 1 ? "top-2 right-3 text-3xl" :
+                      gridSize === 2 ? "top-1 right-2 text-xl" :
+                      gridSize === 3 ? "top-1 right-1.5 text-sm" :
+                      gridSize === 4 ? "top-0.5 right-1 text-xs" :
+                      "top-0 right-0.5 text-[8px]"
+                    }`}>
                       {legislator.chamber === "Senate" ? "S" : "R"}
                     </span>
                     
@@ -969,18 +1018,48 @@ function HomeContent() {
                     {getBillsTriangleColor(legislator.enacted_count) && (
                       <>
                         <div 
-                          className={`absolute bottom-0 right-0 w-0 h-0 border-b-[120px] border-l-[120px] border-l-transparent pointer-events-none ${getBillsTriangleColor(legislator.enacted_count)}`}
+                          className={`absolute bottom-0 right-0 w-0 h-0 border-l-transparent pointer-events-none ${
+                            gridSize === 1 ? "border-b-[120px] border-l-[120px]" :
+                            gridSize === 2 ? "border-b-[80px] border-l-[80px]" :
+                            gridSize === 3 ? "border-b-[60px] border-l-[60px]" :
+                            gridSize === 4 ? "border-b-[40px] border-l-[40px]" :
+                            "border-b-[30px] border-l-[30px]"
+                          } ${getBillsTriangleColor(legislator.enacted_count)}`}
                         />
-                        <span className="absolute bottom-2 right-3 text-white text-3xl font-black pointer-events-none drop-shadow-md">
+                        <span className={`absolute pointer-events-none text-white font-black drop-shadow-md ${
+                          gridSize === 1 ? "bottom-2 right-3 text-3xl" :
+                          gridSize === 2 ? "bottom-1 right-2 text-xl" :
+                          gridSize === 3 ? "bottom-1 right-1.5 text-sm" :
+                          gridSize === 4 ? "bottom-0.5 right-1 text-xs" :
+                          "bottom-0 right-0.5 text-[8px]"
+                        }`}>
                           {legislator.enacted_count}
                         </span>
                       </>
                     )}
                     
                     {/* Gradient overlay at bottom */}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent pt-16 pb-3 px-3 pointer-events-none">
-                      <h3 className="font-semibold text-white truncate">{legislator.full_name}</h3>
-                      <p className="text-sm text-gray-200">{STATE_NAMES[legislator.state] || legislator.state}</p>
+                    <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent pointer-events-none ${
+                      gridSize === 1 ? "pt-16 pb-3 px-3" :
+                      gridSize === 2 ? "pt-12 pb-2 px-2" :
+                      gridSize === 3 ? "pt-8 pb-1.5 px-1.5" :
+                      gridSize === 4 ? "pt-6 pb-1 px-1" :
+                      "pt-4 pb-0.5 px-0.5"
+                    }`}>
+                      <h3 className={`font-semibold text-white truncate ${
+                        gridSize === 1 ? "text-base" :
+                        gridSize === 2 ? "text-sm" :
+                        gridSize === 3 ? "text-xs" :
+                        gridSize === 4 ? "text-[10px]" :
+                        "text-[8px]"
+                      }`}>{legislator.full_name}</h3>
+                      {gridSize <= 3 && (
+                        <p className={`text-gray-200 truncate ${
+                          gridSize === 1 ? "text-sm" :
+                          gridSize === 2 ? "text-xs" :
+                          "text-[10px]"
+                        }`}>{STATE_NAMES[legislator.state] || legislator.state}</p>
+                      )}
                     </div>
                   </div>
                 ))}
