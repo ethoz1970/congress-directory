@@ -31,6 +31,8 @@ interface Legislator {
   total_terms?: number;
   senate_terms?: number;
   house_terms?: number;
+  ideology_score?: number;
+  leadership_score?: number;
   external_ids: {
     thomas?: string;
     govtrack?: number;
@@ -385,7 +387,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                       : "bg-gradient-to-r from-purple-600 to-purple-700"
                 }`} />
                 <div className="px-6 pb-4">
-                  <div className="relative -mt-44 flex items-start gap-5">
+                  <div className="relative -mt-44 flex items-end gap-5">
                     <img
                       src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
                       alt={legislator.full_name}
@@ -394,29 +396,29 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                         (e.target as HTMLImageElement).src = "https://via.placeholder.com/256x320?text=No+Photo";
                       }}
                     />
-                    <div className="flex-1 pt-2">
-                      {/* Tags and name in colored section - aligned with top of photo */}
+                    <div className="flex-1 pb-2">
+                      {/* Tags and name - aligned with bottom of photo */}
                       <div className="mb-4">
                         <div className="flex flex-wrap gap-2 mb-2">
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 border border-gray-300">
                             {legislator.chamber}
                           </span>
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 border border-gray-300">
                             {legislator.party}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <h2 className="text-2xl font-bold text-white">
+                          <h2 className="text-2xl font-bold text-gray-900">
                             {legislator.full_name}
                           </h2>
                           {user && (
                             <button
                               onClick={() => toggleFavorite(legislator.bioguide_id)}
-                              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                               aria-label={isFavorite(legislator.bioguide_id) ? "Remove from favorites" : "Add to favorites"}
                             >
                               <svg
-                                className={`w-6 h-6 ${isFavorite(legislator.bioguide_id) ? "fill-red-500 stroke-red-500" : "fill-none stroke-white"}`}
+                                className={`w-6 h-6 ${isFavorite(legislator.bioguide_id) ? "fill-red-500 stroke-red-500" : "fill-none stroke-gray-500"}`}
                                 viewBox="0 0 24 24"
                                 strokeWidth={2}
                               >
@@ -429,31 +431,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                             </button>
                           )}
                         </div>
-                        <p className="text-white/80">{position}</p>
-                      </div>
-                      
-                      {/* Contact info in white section */}
-                      <div className="mt-8 space-y-1">
-                        {legislator.phone && (
-                          <a href={`tel:${legislator.phone}`} className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
-                            📞 {legislator.phone}
-                          </a>
-                        )}
-                        {legislator.office && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            🏛️ {legislator.office}
-                          </div>
-                        )}
-                        {legislator.website && (
-                          <a href={legislator.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
-                            🌐 Official Website →
-                          </a>
-                        )}
-                        {legislator.contact_form && (
-                          <a href={legislator.contact_form} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
-                            ✉️ Contact Form →
-                          </a>
-                        )}
+                        <p className="text-gray-600">{position}</p>
                       </div>
                     </div>
                   </div>
@@ -462,6 +440,67 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
 
               {/* Details */}
               <div className="px-6 pb-6 space-y-6">
+                {/* Contact Info - Inline */}
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                  {legislator.phone && (
+                    <a href={`tel:${legislator.phone}`} className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800">
+                      📞 {legislator.phone}
+                    </a>
+                  )}
+                  {legislator.office && (
+                    <div className="flex items-center gap-1.5 text-gray-600">
+                      🏛️ {legislator.office}
+                    </div>
+                  )}
+                  {legislator.website && (
+                    <a href={legislator.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800">
+                      🌐 Website →
+                    </a>
+                  )}
+                  {legislator.contact_form && (
+                    <a href={legislator.contact_form} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800">
+                      ✉️ Contact →
+                    </a>
+                  )}
+                </div>
+
+                {/* Ideology Score */}
+                {legislator.ideology_score !== undefined && legislator.ideology_score !== null && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    {/* Ideology spectrum bar */}
+                    <div className="relative h-3 rounded-full bg-gradient-to-r from-blue-600 via-purple-400 to-red-600 mb-2">
+                      {/* Marker for this legislator */}
+                      <div 
+                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-gray-800 rounded-full shadow-lg"
+                        style={{ 
+                          left: `${Math.min(Math.max((legislator.ideology_score + 1) / 2 * 100, 2), 98)}%`,
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-2">
+                      <span>← Progressive</span>
+                      <span>Conservative →</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-6">
+                      <div className="text-center">
+                        <span className="text-lg font-bold text-gray-900">
+                          {legislator.ideology_score > 0 ? '+' : ''}{legislator.ideology_score.toFixed(2)}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-1">ideology</span>
+                      </div>
+                      {legislator.leadership_score !== undefined && (
+                        <div className="text-center border-l border-gray-300 pl-6">
+                          <span className="text-lg font-bold text-gray-900">
+                            {legislator.leadership_score.toFixed(2)}
+                          </span>
+                          <span className="text-xs text-gray-500 ml-1">leadership</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Quick Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-50 rounded-lg p-3">
