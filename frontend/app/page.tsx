@@ -803,20 +803,36 @@ function HomeContent() {
                       fill="none"
                       stroke="#3b82f6"
                       strokeWidth="3"
-                      strokeDasharray={`${(filteredLegislators.length / legislators.length) * 100} 100`}
+                      strokeDasharray={`${(filteredLegislators.length / (
+                        filters.chamber.length === 1 
+                          ? legislators.filter(l => l.chamber === filters.chamber[0]).length 
+                          : legislators.length
+                      )) * 100} 100`}
                       strokeLinecap="round"
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-xs font-semibold text-gray-700">
-                      {Math.round((filteredLegislators.length / legislators.length) * 100)}%
+                      {Math.round((filteredLegislators.length / (
+                        filters.chamber.length === 1 
+                          ? legislators.filter(l => l.chamber === filters.chamber[0]).length 
+                          : legislators.length
+                      )) * 100)}%
                     </span>
                   </div>
                 </div>
                 <div>
                   <div className="text-gray-600">
-                    <span className="font-medium">{filteredLegislators.length}</span> of {legislators.length} members
-                    {hasActiveFilters && (
+                    <span className="font-medium">{filteredLegislators.length}</span> of {
+                      filters.chamber.length === 1 
+                        ? legislators.filter(l => l.chamber === filters.chamber[0]).length 
+                        : legislators.length
+                    } {
+                      filters.chamber.length === 1 
+                        ? (filters.chamber[0] === "Senate" ? "senators" : "representatives")
+                        : "members"
+                    }
+                    {hasActiveFilters && filters.chamber.length !== 1 && (
                       <span className="text-gray-400"> (filtered)</span>
                     )}
                     <span className="text-gray-400 mx-1">•</span>
