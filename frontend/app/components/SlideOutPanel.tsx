@@ -353,7 +353,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
 
       {/* Slide-out panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-2xl bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:max-w-2xl bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -379,26 +379,27 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
             <div>
               {/* Header with photo */}
               <div className="relative">
-                <div className={`h-52 ${
+                <div className={`h-32 sm:h-52 ${
                   legislator.party === "Republican" 
                     ? "bg-gradient-to-r from-red-600 to-red-700"
                     : legislator.party === "Democrat"
                       ? "bg-gradient-to-r from-blue-600 to-blue-700"
                       : "bg-gradient-to-r from-purple-600 to-purple-700"
                 }`} />
-                <div className="px-6 pb-4">
-                  <div className="relative -mt-44 flex items-end gap-5">
+                <div className="px-4 sm:px-6 pb-4">
+                  {/* Mobile: Stack photo and info | Desktop: Side by side */}
+                  <div className="relative -mt-20 sm:-mt-44 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-5">
                     <img
                       src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
                       alt={legislator.full_name}
-                      className="w-64 h-80 object-cover rounded-lg border-4 border-white shadow-lg bg-gray-200 flex-shrink-0"
+                      className="w-32 h-40 sm:w-64 sm:h-80 object-cover rounded-lg border-4 border-white shadow-lg bg-gray-200 flex-shrink-0"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "https://via.placeholder.com/256x320?text=No+Photo";
                       }}
                     />
                     <div className="flex-1 pb-2">
                       {/* Tags and name - aligned with bottom of photo */}
-                      <div className="mb-4">
+                      <div className="mb-2 sm:mb-4">
                         <div className="flex flex-wrap gap-2 mb-2">
                           <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 border border-gray-300">
                             {legislator.chamber}
@@ -407,18 +408,18 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                             {legislator.party}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <h2 className="text-2xl font-bold text-gray-900">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                             {legislator.full_name}
                           </h2>
                           {user && (
                             <button
                               onClick={() => toggleFavorite(legislator.bioguide_id)}
-                              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                              className="p-1.5 sm:p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                               aria-label={isFavorite(legislator.bioguide_id) ? "Remove from favorites" : "Add to favorites"}
                             >
                               <svg
-                                className={`w-6 h-6 ${isFavorite(legislator.bioguide_id) ? "fill-red-500 stroke-red-500" : "fill-none stroke-gray-500"}`}
+                                className={`w-5 h-5 sm:w-6 sm:h-6 ${isFavorite(legislator.bioguide_id) ? "fill-red-500 stroke-red-500" : "fill-none stroke-gray-500"}`}
                                 viewBox="0 0 24 24"
                                 strokeWidth={2}
                               >
@@ -431,7 +432,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                             </button>
                           )}
                         </div>
-                        <p className="text-gray-600">{position}</p>
+                        <p className="text-sm sm:text-base text-gray-600">{position}</p>
                       </div>
                     </div>
                   </div>
@@ -439,9 +440,9 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
               </div>
 
               {/* Details */}
-              <div className="px-6 pb-6 space-y-6">
+              <div className="px-4 sm:px-6 pb-6 space-y-4 sm:space-y-6">
                 {/* Contact Info - Inline */}
-                <div className="flex flex-wrap items-center gap-4 text-sm">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
                   {legislator.phone && (
                     <a href={`tel:${legislator.phone}`} className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800">
                       📞 {legislator.phone}
@@ -502,52 +503,52 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                 )}
 
                 {/* Quick Info */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 rounded-lg p-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
                     <div className="text-xs text-gray-500 uppercase">State</div>
-                    <div className="font-medium text-gray-900">{STATE_NAMES[legislator.state]}</div>
+                    <div className="font-medium text-sm sm:text-base text-gray-900">{STATE_NAMES[legislator.state]}</div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
                     <div className="text-xs text-gray-500 uppercase">
                       {legislator.chamber === "Senate" ? "Class" : "District"}
                     </div>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-sm sm:text-base text-gray-900">
                       {legislator.chamber === "Senate"
                         ? `Class ${legislator.senate_class}`
                         : legislator.district === 0 ? "At-Large" : `District ${legislator.district}`}
                     </div>
                   </div>
                   {legislator.first_term_start && (
-                    <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
                       <div className="text-xs text-gray-500 uppercase">Entered Congress</div>
-                      <div className="font-medium text-gray-900">{new Date(legislator.first_term_start).getFullYear()}</div>
+                      <div className="font-medium text-sm sm:text-base text-gray-900">{new Date(legislator.first_term_start).getFullYear()}</div>
                     </div>
                   )}
-                  <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
                     <div className="text-xs text-gray-500 uppercase">Terms Served</div>
-                    <div className="font-medium text-gray-900">{formatTermCount(legislator)}</div>
+                    <div className="font-medium text-sm sm:text-base text-gray-900">{formatTermCount(legislator)}</div>
                   </div>
                   {legislator.first_term_start && (
-                    <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
                       <div className="text-xs text-gray-500 uppercase">Years in Congress</div>
-                      <div className="font-medium text-gray-900">{calculateYearsOfService(legislator.first_term_start)}</div>
+                      <div className="font-medium text-sm sm:text-base text-gray-900">{calculateYearsOfService(legislator.first_term_start)}</div>
                     </div>
                   )}
-                  <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
                     <div className="text-xs text-gray-500 uppercase">Term Ends</div>
-                    <div className="font-medium text-gray-900">{formatDate(legislator.term_end)}</div>
+                    <div className="font-medium text-sm sm:text-base text-gray-900">{formatDate(legislator.term_end)}</div>
                   </div>
                   {legislator.birthday && (
-                    <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
                       <div className="text-xs text-gray-500 uppercase">Age</div>
-                      <div className="font-medium text-gray-900">{calculateAge(legislator.birthday)} years old</div>
+                      <div className="font-medium text-sm sm:text-base text-gray-900">{calculateAge(legislator.birthday)} years old</div>
                     </div>
                   )}
                 </div>
 
                 {/* Legislative Activity */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 sm:mb-3">
                     Legislative Activity
                     <span className="ml-2 text-xs font-normal normal-case bg-gray-100 px-2 py-0.5 rounded">
                       Live from Congress.gov
@@ -558,17 +559,17 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                     <div className="text-gray-500 text-sm">Loading...</div>
                   ) : legislation ? (
                     <div>
-                      <div className="grid grid-cols-3 gap-3 mb-4">
-                        <div className="bg-blue-50 rounded-lg p-3 text-center">
-                          <div className="text-2xl font-bold text-blue-700">{legislation.sponsored_count}</div>
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
+                        <div className="bg-blue-50 rounded-lg p-2 sm:p-3 text-center">
+                          <div className="text-xl sm:text-2xl font-bold text-blue-700">{legislation.sponsored_count}</div>
                           <div className="text-xs text-blue-600">Sponsored</div>
                         </div>
-                        <div className="bg-green-50 rounded-lg p-3 text-center">
-                          <div className="text-2xl font-bold text-green-700">{legislation.cosponsored_count}</div>
+                        <div className="bg-green-50 rounded-lg p-2 sm:p-3 text-center">
+                          <div className="text-xl sm:text-2xl font-bold text-green-700">{legislation.cosponsored_count}</div>
                           <div className="text-xs text-green-600">Cosponsored</div>
                         </div>
-                        <div className="bg-amber-50 rounded-lg p-3 text-center">
-                          <div className="text-2xl font-bold text-amber-700">{legislation.enacted_count || 0}</div>
+                        <div className="bg-amber-50 rounded-lg p-2 sm:p-3 text-center">
+                          <div className="text-xl sm:text-2xl font-bold text-amber-700">{legislation.enacted_count || 0}</div>
                           <div className="text-xs text-amber-600">Signed into Law</div>
                         </div>
                       </div>
@@ -583,7 +584,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                                 href={getBillUrl(bill)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block p-2 bg-amber-50 rounded hover:bg-amber-100 transition-colors text-sm border border-amber-200"
+                                className="block p-2 bg-amber-50 rounded hover:bg-amber-100 transition-colors text-xs sm:text-sm border border-amber-200"
                               >
                                 <span className="font-medium text-amber-800">{bill.type || "Bill"}.{bill.number || "?"}</span>
                                 {bill.title && (
