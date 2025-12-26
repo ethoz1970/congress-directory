@@ -173,10 +173,13 @@ function HomeContent() {
     billsEnacted: [],
   });
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
-  const [gridSize, setGridSize] = useState<number>(3); // 1-5 scale, default middle
+  const [gridSize, setGridSize] = useState<number>(2); // 1-4 scale, default largest
   const [selectedLegislator, setSelectedLegislator] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [heroVisible, setHeroVisible] = useState(true);
+  const [heroSlide, setHeroSlide] = useState(0);
+  const [heroPaused, setHeroPaused] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     sortSection: false,
     filtersSection: false,
@@ -188,6 +191,39 @@ function HomeContent() {
     state: false,
   });
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Hero slideshow data
+  const heroSlides = [
+    {
+      title: "Explore Your Representatives",
+      description: "Browse all 541 members of the U.S. Congress. Filter by party, state, chamber, and more.",
+      image: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=1200&h=400&fit=crop",
+    },
+    {
+      title: "Track Legislative Activity",
+      description: "See bills sponsored, cosponsored, and signed into law. Live data from Congress.gov.",
+      image: "https://images.unsplash.com/photo-1589262804704-c5aa9e6def89?w=1200&h=400&fit=crop",
+    },
+    {
+      title: "Discover Ideology Scores",
+      description: "Understand where members fall on the political spectrum with GovTrack ideology scores.",
+      image: "https://images.unsplash.com/photo-1523995462485-3d171b5c8fa9?w=1200&h=400&fit=crop",
+    },
+    {
+      title: "Save Your Favorites",
+      description: "Sign in to save and track the representatives that matter most to you.",
+      image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1200&h=400&fit=crop",
+    },
+  ];
+
+  // Hero slideshow auto-advance
+  useEffect(() => {
+    if (!heroVisible || heroPaused) return;
+    const timer = setInterval(() => {
+      setHeroSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 7000);
+    return () => clearInterval(timer);
+  }, [heroVisible, heroPaused, heroSlides.length]);
 
   // Initialize filters from URL on mount
   useEffect(() => {
@@ -776,6 +812,86 @@ function HomeContent() {
           </div>
         </div>
       </div>
+
+      {/* Hero Slideshow */}
+      {heroVisible && (
+        <div className="relative bg-gray-900 overflow-hidden">
+          {/* Slides */}
+          <div className="relative h-48 sm:h-64 md:h-80">
+            {heroSlides.map((slide, index) => (
+              <div
+                key={index}
+                className={`absolute inset-0 transition-opacity duration-1000 ${
+                  heroSlide === index ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                <img
+                  src={slide.image}
+                  alt={slide.title}
+                  className="absolute inset-0 w-full h-full object-cover opacity-40"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center px-6 max-w-3xl">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3">
+                      {slide.title}
+                    </h2>
+                    <p className="text-sm sm:text-base md:text-lg text-gray-200">
+                      {slide.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Controls */}
+          <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4">
+            {/* Dots */}
+            <div className="flex gap-2">
+              {heroSlides.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setHeroSlide(index)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    heroSlide === index
+                      ? "bg-white w-6"
+                      : "bg-white/50 hover:bg-white/75"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            {/* Pause/Play */}
+            <button
+              onClick={() => setHeroPaused(!heroPaused)}
+              className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+              aria-label={heroPaused ? "Play slideshow" : "Pause slideshow"}
+            >
+              {heroPaused ? (
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={() => setHeroVisible(false)}
+            className="absolute top-3 right-3 p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+            aria-label="Close hero"
+          >
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div>
