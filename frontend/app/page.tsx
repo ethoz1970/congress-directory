@@ -813,9 +813,31 @@ function HomeContent() {
                     </span>
                   </div>
                 </div>
-                <span className="text-gray-600">
-                  Showing {filteredLegislators.length} of {legislators.length} members
-                </span>
+                <div>
+                  <div className="text-gray-600">
+                    <span className="font-medium">{filteredLegislators.length}</span> of {legislators.length} members
+                    {hasActiveFilters && (
+                      <span className="text-gray-400"> (filtered)</span>
+                    )}
+                    <span className="text-gray-400 mx-1">•</span>
+                    <span className="text-sm">
+                      sorted by <span className="font-medium">{SORT_OPTIONS.find(o => o.key === sortBy)?.label || sortBy}</span>
+                      {sortDirection === "asc" ? " ↑" : " ↓"}
+                    </span>
+                  </div>
+                  {hasActiveFilters && (
+                    <div className="text-sm text-gray-500 mt-0.5">
+                      {[
+                        filters.party.length > 0 && filters.party.join(" & "),
+                        filters.chamber.length > 0 && filters.chamber.map(c => c === "Senate" ? "Senators" : "Representatives").join(" & "),
+                        filters.gender.length > 0 && filters.gender.map(g => g === "M" ? "Male" : g === "F" ? "Female" : g).join(" & "),
+                        filters.state.length > 0 && (filters.state.length <= 2 ? filters.state.map(s => STATE_NAMES[s] || s).join(" & ") : `${filters.state.length} states`),
+                        filters.yearsInCongress.length > 0 && YEARS_IN_CONGRESS_OPTIONS.filter(o => filters.yearsInCongress.includes(o.key)).map(o => o.label).join(" or "),
+                        filters.billsEnacted.length > 0 && BILLS_ENACTED_OPTIONS.filter(o => filters.billsEnacted.includes(o.key)).map(o => o.label.toLowerCase()).join(" or "),
+                      ].filter(Boolean).join(" • ")}
+                    </div>
+                  )}
+                </div>
               </div>
               
               {/* View Toggle */}
