@@ -208,7 +208,7 @@ function HomeContent() {
     setZipResults([]);
     
     try {
-      const response = await fetch(`${API_BASE}/api/find-rep?zip=${zipCode}`);
+      const response = await fetch(`${API_URL}/api/find-rep?zip=${zipCode}`);
       if (!response.ok) throw new Error("Failed to find representatives");
       
       const data = await response.json();
