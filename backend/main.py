@@ -650,3 +650,66 @@ async def get_youtube_videos(bioguide_id: str, refresh: bool = False):
             
     except Exception as e:
         return {"videos": [], "bioguide_id": bioguide_id, "error": str(e)}
+
+
+# ============ FIND YOUR REP ENDPOINT ============
+
+@app.get("/api/find-rep")
+async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
+    """
+    Find representatives and senators by zip code using whoismyrepresentative.com API.
+    Returns matched bioguide_ids from our database.
+    """
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://whoismyrepresentative.com/getall_mems.php?zip={zip}&output=json",
+                timeout=10.0
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail="Failed to fetch representative data")
+            
+            data = response.json()
+            
+            # The API returns {"results": [...]} with name, state, district, etc.
+            results = data.get("results", [])
+            
+            # Match with our legislators by name
+            matched = []
+            for rep in results:
+                name = rep.get("name", "")
+                # Search our database for matching legislator
+                # Try to match by last name and state
+                state = rep.get("state", "")
+                
+                # Query legislators by state
+                query = db.collection("legislators").where("state", "==", state).stream()
+                
+                for doc in query:
+                    leg = doc.to_dict()
+                    leg_name = leg.get("full_name", "")
+                    # Check if names match (simple contains check)
+                    if name and (name in leg_name or leg_name in name or 
+                                 leg.get("last_name", "").lower() in name.lower()):
+                        matched.append({
+                            "bioguide_id": leg.get("bioguide_id"),
+                            "full_name": leg.get("full_name"),
+                            "party": leg.get("party"),
+                            "state": leg.get("state"),
+                            "chamber": leg.get("chamber"),
+                            "district": leg.get("district"),
+                            "api_name": name,
+                        })
+                        break
+            
+            return {
+                "zip": zip,
+                "representatives": matched,
+                "raw_results": results
+            }
+            
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=500, detail=f"API request failed: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

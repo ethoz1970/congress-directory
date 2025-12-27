@@ -173,7 +173,7 @@ function HomeContent() {
     billsEnacted: [],
   });
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
-  const [gridSize, setGridSize] = useState<number>(2); // 1-4 scale, default largest
+  const [gridSize, setGridSize] = useState<number>(1); // 1-4 scale, default largest
   const [selectedLegislator, setSelectedLegislator] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -191,6 +191,43 @@ function HomeContent() {
     state: false,
   });
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [zipCode, setZipCode] = useState("");
+  const [zipResults, setZipResults] = useState<Legislator[]>([]);
+  const [zipLoading, setZipLoading] = useState(false);
+  const [zipError, setZipError] = useState<string | null>(null);
+
+  // Find Your Rep function
+  const findYourRep = async () => {
+    if (zipCode.length !== 5 || !/^\d+$/.test(zipCode)) {
+      setZipError("Please enter a valid 5-digit zip code");
+      return;
+    }
+    
+    setZipLoading(true);
+    setZipError(null);
+    setZipResults([]);
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/find-rep?zip=${zipCode}`);
+      if (!response.ok) throw new Error("Failed to find representatives");
+      
+      const data = await response.json();
+      
+      // Match bioguide_ids with our legislators
+      const matchedBioguides = data.representatives.map((r: { bioguide_id: string }) => r.bioguide_id);
+      const matched = legislators.filter(l => matchedBioguides.includes(l.bioguide_id));
+      
+      if (matched.length === 0) {
+        setZipError("No representatives found for this zip code");
+      } else {
+        setZipResults(matched);
+      }
+    } catch (err) {
+      setZipError("Error finding representatives. Please try again.");
+    } finally {
+      setZipLoading(false);
+    }
+  };
 
   // Hero slideshow data
   const heroSlides = [
@@ -895,6 +932,88 @@ function HomeContent() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div>
+          {/* Find Your Rep */}
+          <div className="mb-6 bg-white rounded-lg shadow p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📍</span>
+                <span className="font-medium text-gray-700">Find Your Rep:</span>
+              </div>
+              <div className="flex flex-1 gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter zip code"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                  onKeyDown={(e) => e.key === "Enter" && findYourRep()}
+                  className="flex-1 sm:flex-none sm:w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+                <button
+                  onClick={findYourRep}
+                  disabled={zipLoading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition-colors font-medium"
+                >
+                  {zipLoading ? "..." : "Go"}
+                </button>
+                {zipResults.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setZipResults([]);
+                      setZipCode("");
+                      setZipError(null);
+                    }}
+                    className="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {zipError && (
+              <p className="mt-2 text-sm text-red-600">{zipError}</p>
+            )}
+            
+            {zipResults.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-500 mb-3">Your representatives for zip code {zipCode}:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {zipResults.map((legislator) => (
+                    <div
+                      key={legislator.bioguide_id}
+                      onClick={() => setSelectedLegislator(legislator.bioguide_id)}
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors border border-gray-200"
+                    >
+                      <img
+                        src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                        alt={legislator.full_name}
+                        className="w-12 h-16 object-cover rounded bg-gray-200"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "https://via.placeholder.com/48x64?text=?";
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{legislator.full_name}</p>
+                        <p className="text-sm text-gray-500">
+                          {legislator.chamber === "Senate" ? "Senator" : `Rep. - District ${legislator.district}`}
+                        </p>
+                        <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${
+                          legislator.party === "Republican" 
+                            ? "bg-red-100 text-red-700" 
+                            : legislator.party === "Democrat"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-purple-100 text-purple-700"
+                        }`}>
+                          {legislator.party}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Results */}
           <div className="flex-1">
             <div className="mb-4 flex items-center justify-between">
