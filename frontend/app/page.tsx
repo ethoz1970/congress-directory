@@ -1322,6 +1322,23 @@ function HomeContent() {
                       </>
                     )}
                     
+                    {/* Ideology indicator in bottom left */}
+                    {legislator.ideology_score !== undefined && gridSize <= 2 && (
+                      <div className={`absolute bottom-2 left-2 rounded px-1.5 py-0.5 pointer-events-none ${
+                        legislator.ideology_score < -0.3 
+                          ? "bg-blue-600" 
+                          : legislator.ideology_score > 0.3 
+                            ? "bg-red-600" 
+                            : "bg-purple-600"
+                      }`}>
+                        <span className={`font-bold text-white ${
+                          gridSize === 1 ? "text-xs" : "text-[10px]"
+                        }`}>
+                          {legislator.ideology_score > 0 ? "+" : ""}{legislator.ideology_score.toFixed(1)}
+                        </span>
+                      </div>
+                    )}
+                    
                     {/* Gradient overlay at bottom */}
                     <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent pointer-events-none ${
                       gridSize === 1 ? "pt-16 pb-3 px-3" :
