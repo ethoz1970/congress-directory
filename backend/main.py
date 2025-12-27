@@ -664,34 +664,55 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"https://whoismyrepresentative.com/getall_mems.php?zip={zip}&output=json",
-                timeout=10.0
+                timeout=10.0,
+                headers={"User-Agent": "CongressDirectory/1.0"}
             )
             
             if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail="Failed to fetch representative data")
+                raise HTTPException(status_code=response.status_code, detail=f"Failed to fetch representative data: {response.status_code}")
             
-            data = response.json()
+            try:
+                data = response.json()
+            except:
+                raise HTTPException(status_code=500, detail=f"Invalid JSON response: {response.text[:200]}")
             
             # The API returns {"results": [...]} with name, state, district, etc.
             results = data.get("results", [])
+            
+            if not results:
+                return {
+                    "zip": zip,
+                    "representatives": [],
+                    "raw_results": [],
+                    "message": "No representatives found for this zip code"
+                }
             
             # Match with our legislators by name
             matched = []
             for rep in results:
                 name = rep.get("name", "")
-                # Search our database for matching legislator
-                # Try to match by last name and state
                 state = rep.get("state", "")
+                
+                # Clean the name - remove "Rep. " or "Sen. " prefix
+                clean_name = name.replace("Rep. ", "").replace("Sen. ", "").strip()
+                
+                # Extract last name (usually the last word, but handle suffixes like Jr., III)
+                name_parts = clean_name.split()
+                last_name = name_parts[-1] if name_parts else ""
+                # Handle suffixes
+                if last_name.lower() in ["jr.", "jr", "sr.", "sr", "ii", "iii", "iv"]:
+                    last_name = name_parts[-2] if len(name_parts) > 1 else ""
                 
                 # Query legislators by state
                 query = db.collection("legislators").where("state", "==", state).stream()
                 
                 for doc in query:
                     leg = doc.to_dict()
-                    leg_name = leg.get("full_name", "")
-                    # Check if names match (simple contains check)
-                    if name and (name in leg_name or leg_name in name or 
-                                 leg.get("last_name", "").lower() in name.lower()):
+                    leg_last_name = leg.get("last_name", "").lower()
+                    leg_full_name = leg.get("full_name", "").lower()
+                    
+                    # Check if last names match
+                    if last_name.lower() == leg_last_name or last_name.lower() in leg_full_name:
                         matched.append({
                             "bioguide_id": leg.get("bioguide_id"),
                             "full_name": leg.get("full_name"),
@@ -711,5 +732,7 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
             
     except httpx.RequestError as e:
         raise HTTPException(status_code=500, detail=f"API request failed: {str(e)}")
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
