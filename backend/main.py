@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import firebase_admin
 from firebase_admin import credentials, firestore
 from typing import Optional, List
+from datetime import datetime, timedelta
 
 cred = credentials.Certificate("firebase-credentials.json")
 firebase_admin.initialize_app(cred)
@@ -24,6 +25,73 @@ app.add_middleware(
 CONGRESS_API_KEY = os.environ.get("CONGRESS_API_KEY", "YOUR_API_KEY_HERE")
 CONGRESS_API_BASE = "https://api.congress.gov/v3"
 
+# ============ CACHING ============
+# Simple in-memory cache to reduce Firestore reads
+cache = {
+    "legislators": {"data": None, "expires": None},
+    "legislators_by_id": {},  # Individual legislator cache
+}
+CACHE_DURATION = timedelta(hours=24)  # Cache for 24 hours
+
+def get_cached_legislators():
+    """Get legislators from cache or Firestore"""
+    now = datetime.now()
+    
+    # Check if cache is valid
+    if cache["legislators"]["data"] and cache["legislators"]["expires"] and cache["legislators"]["expires"] > now:
+        return cache["legislators"]["data"]
+    
+    # Fetch from Firestore
+    docs = db.collection("legislators").stream()
+    legislators = []
+    for doc in docs:
+        legislator = doc.to_dict()
+        legislator["id"] = doc.id
+        legislators.append(legislator)
+        # Also cache individually
+        cache["legislators_by_id"][legislator.get("bioguide_id")] = {
+            "data": legislator,
+            "expires": now + CACHE_DURATION
+        }
+    
+    legislators.sort(key=lambda l: (
+        l.get("state", ""),
+        l.get("chamber", ""),
+        l.get("last_name", "")
+    ))
+    
+    # Update cache
+    cache["legislators"]["data"] = legislators
+    cache["legislators"]["expires"] = now + CACHE_DURATION
+    
+    return legislators
+
+def get_cached_legislator(bioguide_id: str):
+    """Get single legislator from cache or Firestore"""
+    now = datetime.now()
+    
+    # Check individual cache
+    if bioguide_id in cache["legislators_by_id"]:
+        cached = cache["legislators_by_id"][bioguide_id]
+        if cached["expires"] > now:
+            return cached["data"]
+    
+    # Fetch from Firestore
+    doc = db.collection("legislators").document(bioguide_id).get()
+    if not doc.exists:
+        return None
+    
+    legislator = doc.to_dict()
+    legislator["id"] = doc.id
+    
+    # Update cache
+    cache["legislators_by_id"][bioguide_id] = {
+        "data": legislator,
+        "expires": now + CACHE_DURATION
+    }
+    
+    return legislator
+
 @app.get("/api/hello")
 def hello():
     return {"message": "Hello from Python!"}
@@ -38,74 +106,50 @@ def get_legislators(
 ):
     """
     Get all legislators, optionally filtered by state, party, or chamber.
+    Uses caching to reduce Firestore reads.
     """
-    query = db.collection("legislators")
+    # Get from cache (or refresh cache if expired)
+    legislators = get_cached_legislators()
     
+    # Apply filters in memory
     if state:
-        query = query.where("state", "==", state.upper())
+        legislators = [l for l in legislators if l.get("state", "").upper() == state.upper()]
     
     if party:
-        query = query.where("party", "==", party)
+        legislators = [l for l in legislators if l.get("party") == party]
     
     if chamber:
-        query = query.where("chamber", "==", chamber)
-    
-    docs = query.stream()
-    legislators = []
-    for doc in docs:
-        legislator = doc.to_dict()
-        legislator["id"] = doc.id
-        legislators.append(legislator)
-    
-    legislators.sort(key=lambda l: (
-        l.get("state", ""),
-        l.get("chamber", ""),
-        l.get("last_name", "")
-    ))
+        legislators = [l for l in legislators if l.get("chamber") == chamber]
     
     return legislators
 
 @app.get("/api/legislators/{bioguide_id}")
 def get_legislator(bioguide_id: str):
-    """Get a single legislator by their Bioguide ID."""
-    doc = db.collection("legislators").document(bioguide_id).get()
+    """Get a single legislator by their Bioguide ID. Uses caching."""
+    legislator = get_cached_legislator(bioguide_id)
     
-    if not doc.exists:
+    if not legislator:
         raise HTTPException(status_code=404, detail="Legislator not found")
     
-    legislator = doc.to_dict()
-    legislator["id"] = doc.id
     return legislator
 
 @app.get("/api/legislators/state/{state}")
 def get_legislators_by_state(state: str, chamber: Optional[str] = None):
     """Get all legislators for a given state."""
-    query = db.collection("legislators").where("state", "==", state.upper())
+    legislators = get_cached_legislators()
+    
+    # Filter in memory
+    result = [l for l in legislators if l.get("state", "").upper() == state.upper()]
     
     if chamber:
-        query = query.where("chamber", "==", chamber)
+        result = [l for l in result if l.get("chamber") == chamber]
     
-    docs = query.stream()
-    
-    legislators = []
-    for doc in docs:
-        legislator = doc.to_dict()
-        legislator["id"] = doc.id
-        legislators.append(legislator)
-    
-    legislators.sort(key=lambda l: (
-        0 if l.get("chamber") == "Senate" else 1,
-        l.get("last_name", "")
-    ))
-    
-    return legislators
+    return result
 
 @app.get("/api/stats")
 def get_stats():
     """Get summary statistics about the legislators."""
-    docs = db.collection("legislators").stream()
-    
-    legislators = [doc.to_dict() for doc in docs]
+    legislators = get_cached_legislators()
     
     chambers = {}
     for l in legislators:

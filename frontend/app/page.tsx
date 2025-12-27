@@ -1323,7 +1323,7 @@ function HomeContent() {
                     )}
                     
                     {/* Ideology indicator in bottom left */}
-                    {legislator.ideology_score !== undefined && gridSize <= 2 && (
+                    {legislator.ideology_score != null && gridSize <= 2 && (
                       <div className={`absolute bottom-2 left-2 rounded px-1.5 py-0.5 pointer-events-none ${
                         legislator.ideology_score < -0.3 
                           ? "bg-blue-600" 
