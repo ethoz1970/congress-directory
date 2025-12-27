@@ -173,7 +173,7 @@ function HomeContent() {
     billsEnacted: [],
   });
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
-  const [gridSize, setGridSize] = useState<number>(1); // 1-4 scale, default largest
+  const [gridSize, setGridSize] = useState<number>(2); // 1-4 scale, default 2
   const [selectedLegislator, setSelectedLegislator] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -208,21 +208,32 @@ function HomeContent() {
     setZipResults([]);
     
     try {
+      console.log(`Fetching: ${API_URL}/api/find-rep?zip=${zipCode}`);
       const response = await fetch(`${API_URL}/api/find-rep?zip=${zipCode}`);
-      if (!response.ok) throw new Error("Failed to find representatives");
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API Error:", response.status, errorText);
+        throw new Error(`API error: ${response.status}`);
+      }
       
       const data = await response.json();
+      console.log("API Response:", data);
       
       // Match bioguide_ids with our legislators
       const matchedBioguides = data.representatives.map((r: { bioguide_id: string }) => r.bioguide_id);
       const matched = legislators.filter(l => matchedBioguides.includes(l.bioguide_id));
       
-      if (matched.length === 0) {
+      if (matched.length === 0 && data.raw_results?.length > 0) {
+        // API returned results but we couldn't match them
+        setZipError(`Found ${data.raw_results.length} reps but couldn't match to database`);
+      } else if (matched.length === 0) {
         setZipError("No representatives found for this zip code");
       } else {
         setZipResults(matched);
       }
     } catch (err) {
+      console.error("Find rep error:", err);
       setZipError("Error finding representatives. Please try again.");
     } finally {
       setZipLoading(false);
@@ -946,7 +957,7 @@ function HomeContent() {
                   value={zipCode}
                   onChange={(e) => setZipCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
                   onKeyDown={(e) => e.key === "Enter" && findYourRep()}
-                  className="flex-1 sm:flex-none sm:w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="flex-1 sm:flex-none sm:w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
                 />
                 <button
                   onClick={findYourRep}
