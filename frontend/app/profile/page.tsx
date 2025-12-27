@@ -6,6 +6,7 @@ import { useAuth } from "../../lib/AuthContext";
 import { db } from "../../lib/firebase";
 import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import { useFavorites } from "../../lib/useFavorites";
+import SlideOutPanel from "../components/SlideOutPanel";
 
 interface Legislator {
   bioguide_id: string;
@@ -13,6 +14,11 @@ interface Legislator {
   party: string;
   state: string;
   chamber: string;
+  district?: number;
+  enacted_count?: number;
+  first_term_start?: string;
+  birthday?: string;
+  ideology_score?: number;
 }
 
 interface UserProfile {
@@ -36,17 +42,6 @@ const STATE_NAMES: Record<string, string> = {
   VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
   AS: "American Samoa", DC: "District of Columbia", GU: "Guam", MP: "Northern Mariana Islands",
   PR: "Puerto Rico", VI: "Virgin Islands"
-};
-
-const PARTY_COLORS: Record<string, string> = {
-  Democrat: "bg-blue-100 text-blue-800",
-  Republican: "bg-red-100 text-red-800",
-  Independent: "bg-purple-100 text-purple-800",
-};
-
-const CHAMBER_COLORS: Record<string, string> = {
-  Senate: "bg-amber-100 text-amber-800",
-  House: "bg-emerald-100 text-emerald-800",
 };
 
 function formatDate(date: Date | null): string {
@@ -87,13 +82,32 @@ function getTimeSince(date: Date | null): string {
   }
 }
 
+function calculateAge(birthday: string): number {
+  const birth = new Date(birthday);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+function calculateYearsInCongress(firstTermStart?: string): number {
+  if (!firstTermStart) return 0;
+  const start = new Date(firstTermStart);
+  const today = new Date();
+  return Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+}
+
 export default function ProfilePage() {
   const { user, loading: authLoading } = useAuth();
-  const { favorites, toggleFavorite } = useFavorites();
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const router = useRouter();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [favoriteLegislators, setFavoriteLegislators] = useState<Legislator[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedLegislator, setSelectedLegislator] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -132,6 +146,11 @@ export default function ProfilePage() {
             party: data.party,
             state: data.state,
             chamber: data.chamber,
+            district: data.district,
+            enacted_count: data.enacted_count,
+            first_term_start: data.first_term_start,
+            birthday: data.birthday,
+            ideology_score: data.ideology_score,
           };
         });
         
@@ -173,7 +192,7 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
             <button
@@ -186,7 +205,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Profile Card */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <div className="flex items-center gap-6">
@@ -236,68 +255,127 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Favorites List */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-900">My Favorite Members</h3>
+        {/* Favorites Grid - Trading Cards */}
+        <div className="mb-4">
+          <h3 className="text-xl font-semibold text-gray-900">My Favorite Members</h3>
+        </div>
+        
+        {favoriteLegislators.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+            <p>You haven't favorited any members yet.</p>
+            <button
+              onClick={() => router.push("/")}
+              className="mt-4 text-blue-600 hover:text-blue-800"
+            >
+              Browse members →
+            </button>
           </div>
-          
-          {favoriteLegislators.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <p>You haven't favorited any members yet.</p>
-              <button
-                onClick={() => router.push("/")}
-                className="mt-4 text-blue-600 hover:text-blue-800"
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {favoriteLegislators.map((legislator) => (
+              <div
+                key={legislator.bioguide_id}
+                className="relative rounded-xl shadow-lg overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl aspect-[3/4]"
+                onClick={() => setSelectedLegislator(legislator.bioguide_id)}
               >
-                Browse members →
-              </button>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200">
-              {favoriteLegislators.map((legislator) => (
-                <div
-                  key={legislator.bioguide_id}
-                  className="px-6 py-4 flex items-center justify-between hover:bg-gray-50"
+                {/* Full background image */}
+                <img
+                  src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                  alt={legislator.full_name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x400?text=No+Photo";
+                  }}
+                />
+                
+                {/* Party color bar at top */}
+                <div className={`absolute top-0 left-0 right-0 h-2 ${
+                  legislator.party === "Republican" 
+                    ? "bg-red-600" 
+                    : legislator.party === "Democrat"
+                      ? "bg-blue-600"
+                      : "bg-purple-600"
+                }`} />
+                
+                {/* Chamber badge */}
+                <div className={`absolute top-4 right-4 px-2 py-1 rounded text-xs font-bold text-white ${
+                  legislator.chamber === "Senate" ? "bg-amber-600" : "bg-emerald-600"
+                }`}>
+                  {legislator.chamber === "Senate" ? "SEN" : "REP"}
+                </div>
+                
+                {/* Favorite button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(legislator.bioguide_id);
+                  }}
+                  className="absolute top-4 left-4 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors"
                 >
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
-                      alt={legislator.full_name}
-                      className="w-12 h-14 object-cover rounded bg-gray-200"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/48x56?text=?";
-                      }}
+                  <svg
+                    className="w-5 h-5 fill-red-500 stroke-red-500"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
                     />
-                    <div>
-                      <p className="font-medium text-gray-900">{legislator.full_name}</p>
-                      <p className="text-sm text-gray-500">
-                        {STATE_NAMES[legislator.state] || legislator.state}
-                      </p>
+                  </svg>
+                </button>
+                
+                {/* Gradient overlay for text readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                
+                {/* Content overlay */}
+                <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                  {/* Name and location */}
+                  <h4 className="text-lg font-bold leading-tight mb-1">{legislator.full_name}</h4>
+                  <p className="text-sm text-gray-300 mb-3">
+                    {STATE_NAMES[legislator.state] || legislator.state}
+                    {legislator.chamber === "House" && legislator.district !== undefined && 
+                      ` • District ${legislator.district === 0 ? "At-Large" : legislator.district}`
+                    }
+                  </p>
+                  
+                  {/* Stats row */}
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <div className="bg-black/40 rounded-lg py-2 px-1">
+                      <div className="text-lg font-bold">{legislator.enacted_count || 0}</div>
+                      <div className="text-[10px] text-gray-300 uppercase">Bills</div>
+                    </div>
+                    <div className="bg-black/40 rounded-lg py-2 px-1">
+                      <div className="text-lg font-bold">{calculateYearsInCongress(legislator.first_term_start)}</div>
+                      <div className="text-[10px] text-gray-300 uppercase">Years</div>
+                    </div>
+                    <div className="bg-black/40 rounded-lg py-2 px-1">
+                      <div className="text-lg font-bold">{legislator.birthday ? calculateAge(legislator.birthday) : "—"}</div>
+                      <div className="text-[10px] text-gray-300 uppercase">Age</div>
+                    </div>
+                    <div className="bg-black/40 rounded-lg py-2 px-1">
+                      <div className="text-lg font-bold">
+                        {legislator.ideology_score !== undefined 
+                          ? (legislator.ideology_score > 0 ? "+" : "") + legislator.ideology_score.toFixed(1)
+                          : "—"
+                        }
+                      </div>
+                      <div className="text-[10px] text-gray-300 uppercase">Ideo</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${CHAMBER_COLORS[legislator.chamber]}`}>
-                      {legislator.chamber}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${PARTY_COLORS[legislator.party]}`}>
-                      {legislator.party}
-                    </span>
-                    <button
-                      onClick={() => toggleFavorite(legislator.bioguide_id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                      title="Remove from favorites"
-                    >
-                      <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                        <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-                      </svg>
-                    </button>
-                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Slide-out Panel */}
+      <SlideOutPanel
+        bioguideId={selectedLegislator}
+        isOpen={!!selectedLegislator}
+        onClose={() => setSelectedLegislator(null)}
+      />
     </main>
   );
 }
