@@ -373,7 +373,6 @@ export default function ProfilePage() {
       {/* Slide-out Panel */}
       <SlideOutPanel
         bioguideId={selectedLegislator}
-        isOpen={!!selectedLegislator}
         onClose={() => setSelectedLegislator(null)}
       />
     </main>
