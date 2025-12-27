@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "legiSLatE!",
+  title: "lPoly Sci-Fi",
   description: "Explore members of the U.S. Congress with filters, sorting, and detailed information.",
 };
 
