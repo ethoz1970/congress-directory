@@ -353,7 +353,15 @@ export default function ProfilePage() {
                       <div className="text-lg font-bold">{legislator.birthday ? calculateAge(legislator.birthday) : "—"}</div>
                       <div className="text-[10px] text-gray-300 uppercase">Age</div>
                     </div>
-                    <div className="bg-black/40 rounded-lg py-2 px-1">
+                    <div className={`rounded-lg py-2 px-1 ${
+                      legislator.ideology_score === undefined 
+                        ? "bg-black/40"
+                        : legislator.ideology_score < -0.3 
+                          ? "bg-blue-600/80" 
+                          : legislator.ideology_score > 0.3 
+                            ? "bg-red-600/80" 
+                            : "bg-purple-600/80"
+                    }`}>
                       <div className="text-lg font-bold">
                         {legislator.ideology_score !== undefined 
                           ? (legislator.ideology_score > 0 ? "+" : "") + legislator.ideology_score.toFixed(1)
