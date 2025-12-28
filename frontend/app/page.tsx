@@ -1393,19 +1393,19 @@ function HomeContent() {
                       <>
                         <div 
                           className={`absolute top-0 left-0 w-0 h-0 border-r-transparent pointer-events-none ${
-                            gridSize === 1 ? "border-t-[120px] border-r-[120px]" :
-                            gridSize === 2 ? "border-t-[80px] border-r-[80px]" :
-                            gridSize === 3 ? "border-t-[60px] border-r-[60px]" :
-                            gridSize === 4 ? "border-t-[40px] border-r-[40px]" :
-                            "border-t-[30px] border-r-[30px]"
+                            gridSize === 1 ? "border-t-[60px] border-r-[60px] sm:border-t-[120px] sm:border-r-[120px]" :
+                            gridSize === 2 ? "border-t-[40px] border-r-[40px] sm:border-t-[80px] sm:border-r-[80px]" :
+                            gridSize === 3 ? "border-t-[30px] border-r-[30px] sm:border-t-[60px] sm:border-r-[60px]" :
+                            gridSize === 4 ? "border-t-[20px] border-r-[20px] sm:border-t-[40px] sm:border-r-[40px]" :
+                            "border-t-[15px] border-r-[15px] sm:border-t-[30px] sm:border-r-[30px]"
                           } ${getNewsTriangleColor(legislator.news_mentions)}`}
                         />
                         <span className={`absolute pointer-events-none text-white font-black drop-shadow-md ${
-                          gridSize === 1 ? "top-2 left-3 text-3xl" :
-                          gridSize === 2 ? "top-1 left-2 text-xl" :
-                          gridSize === 3 ? "top-1 left-1.5 text-sm" :
-                          gridSize === 4 ? "top-0.5 left-1 text-xs" :
-                          "top-0 left-0.5 text-[8px]"
+                          gridSize === 1 ? "top-1 left-1.5 text-lg sm:top-2 sm:left-3 sm:text-3xl" :
+                          gridSize === 2 ? "top-0.5 left-1 text-sm sm:top-1 sm:left-2 sm:text-xl" :
+                          gridSize === 3 ? "top-0.5 left-0.5 text-xs sm:top-1 sm:left-1.5 sm:text-sm" :
+                          gridSize === 4 ? "top-0 left-0.5 text-[6px] sm:top-0.5 sm:left-1 sm:text-xs" :
+                          "top-0 left-0 text-[5px] sm:top-0 sm:left-0.5 sm:text-[8px]"
                         }`}>
                           {legislator.news_mentions}
                         </span>
@@ -1441,11 +1441,11 @@ function HomeContent() {
                     {/* Party color triangle in upper right with chamber letter */}
                     <div 
                       className={`absolute top-0 right-0 w-0 h-0 border-l-transparent pointer-events-none ${
-                        gridSize === 1 ? "border-t-[120px] border-l-[120px]" :
-                        gridSize === 2 ? "border-t-[80px] border-l-[80px]" :
-                        gridSize === 3 ? "border-t-[60px] border-l-[60px]" :
-                        gridSize === 4 ? "border-t-[40px] border-l-[40px]" :
-                        "border-t-[30px] border-l-[30px]"
+                        gridSize === 1 ? "border-t-[60px] border-l-[60px] sm:border-t-[120px] sm:border-l-[120px]" :
+                        gridSize === 2 ? "border-t-[40px] border-l-[40px] sm:border-t-[80px] sm:border-l-[80px]" :
+                        gridSize === 3 ? "border-t-[30px] border-l-[30px] sm:border-t-[60px] sm:border-l-[60px]" :
+                        gridSize === 4 ? "border-t-[20px] border-l-[20px] sm:border-t-[40px] sm:border-l-[40px]" :
+                        "border-t-[15px] border-l-[15px] sm:border-t-[30px] sm:border-l-[30px]"
                       } ${
                         legislator.party === "Republican" 
                           ? "border-t-red-600" 
@@ -1455,11 +1455,11 @@ function HomeContent() {
                       }`}
                     />
                     <span className={`absolute pointer-events-none text-white font-black ${
-                      gridSize === 1 ? "top-2 right-3 text-3xl" :
-                      gridSize === 2 ? "top-1 right-2 text-xl" :
-                      gridSize === 3 ? "top-1 right-1.5 text-sm" :
-                      gridSize === 4 ? "top-0.5 right-1 text-xs" :
-                      "top-0 right-0.5 text-[8px]"
+                      gridSize === 1 ? "top-1 right-1.5 text-lg sm:top-2 sm:right-3 sm:text-3xl" :
+                      gridSize === 2 ? "top-0.5 right-1 text-sm sm:top-1 sm:right-2 sm:text-xl" :
+                      gridSize === 3 ? "top-0.5 right-0.5 text-xs sm:top-1 sm:right-1.5 sm:text-sm" :
+                      gridSize === 4 ? "top-0 right-0.5 text-[6px] sm:top-0.5 sm:right-1 sm:text-xs" :
+                      "top-0 right-0 text-[5px] sm:top-0 sm:right-0.5 sm:text-[8px]"
                     }`}>
                       {legislator.chamber === "Senate" ? "S" : "R"}
                     </span>
@@ -1469,19 +1469,19 @@ function HomeContent() {
                       <>
                         <div 
                           className={`absolute bottom-0 right-0 w-0 h-0 border-l-transparent pointer-events-none ${
-                            gridSize === 1 ? "border-b-[120px] border-l-[120px]" :
-                            gridSize === 2 ? "border-b-[80px] border-l-[80px]" :
-                            gridSize === 3 ? "border-b-[60px] border-l-[60px]" :
-                            gridSize === 4 ? "border-b-[40px] border-l-[40px]" :
-                            "border-b-[30px] border-l-[30px]"
+                            gridSize === 1 ? "border-b-[60px] border-l-[60px] sm:border-b-[120px] sm:border-l-[120px]" :
+                            gridSize === 2 ? "border-b-[40px] border-l-[40px] sm:border-b-[80px] sm:border-l-[80px]" :
+                            gridSize === 3 ? "border-b-[30px] border-l-[30px] sm:border-b-[60px] sm:border-l-[60px]" :
+                            gridSize === 4 ? "border-b-[20px] border-l-[20px] sm:border-b-[40px] sm:border-l-[40px]" :
+                            "border-b-[15px] border-l-[15px] sm:border-b-[30px] sm:border-l-[30px]"
                           } ${getBillsTriangleColor(legislator.enacted_count)}`}
                         />
                         <span className={`absolute pointer-events-none text-white font-black drop-shadow-md ${
-                          gridSize === 1 ? "bottom-2 right-3 text-3xl" :
-                          gridSize === 2 ? "bottom-1 right-2 text-xl" :
-                          gridSize === 3 ? "bottom-1 right-1.5 text-sm" :
-                          gridSize === 4 ? "bottom-0.5 right-1 text-xs" :
-                          "bottom-0 right-0.5 text-[8px]"
+                          gridSize === 1 ? "bottom-1 right-1.5 text-lg sm:bottom-2 sm:right-3 sm:text-3xl" :
+                          gridSize === 2 ? "bottom-0.5 right-1 text-sm sm:bottom-1 sm:right-2 sm:text-xl" :
+                          gridSize === 3 ? "bottom-0.5 right-0.5 text-xs sm:bottom-1 sm:right-1.5 sm:text-sm" :
+                          gridSize === 4 ? "bottom-0 right-0.5 text-[6px] sm:bottom-0.5 sm:right-1 sm:text-xs" :
+                          "bottom-0 right-0 text-[5px] sm:bottom-0 sm:right-0.5 sm:text-[8px]"
                         }`}>
                           {legislator.enacted_count}
                         </span>

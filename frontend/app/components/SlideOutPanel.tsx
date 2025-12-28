@@ -364,6 +364,17 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
+        {/* Color strip at very top - above everything */}
+        {legislator && (
+          <div className={`absolute top-0 left-0 right-0 h-2 z-[101] ${
+            legislator.party === "Republican" 
+              ? "bg-gradient-to-r from-red-500 to-red-600"
+              : legislator.party === "Democrat"
+                ? "bg-gradient-to-r from-blue-500 to-blue-600"
+                : "bg-gradient-to-r from-purple-500 to-purple-600"
+          }`} />
+        )}
+        
         {/* Top action buttons - fixed position within panel */}
         <div className="fixed top-4 right-4 sm:absolute flex items-center gap-2 z-[100]">
           {/* Share Card button */}
@@ -403,63 +414,143 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
             </div>
           ) : (
             <div>
+              {/* Small color strip at very top */}
+              <div className={`h-3 ${
+                legislator.party === "Republican" 
+                  ? "bg-gradient-to-r from-red-600 to-red-700"
+                  : legislator.party === "Democrat"
+                    ? "bg-gradient-to-r from-blue-600 to-blue-700"
+                    : "bg-gradient-to-r from-purple-600 to-purple-700"
+              }`} />
+              
               {/* Header with photo */}
-              <div className="relative">
-                <div className={`h-32 sm:h-52 ${
-                  legislator.party === "Republican" 
-                    ? "bg-gradient-to-r from-red-600 to-red-700"
-                    : legislator.party === "Democrat"
-                      ? "bg-gradient-to-r from-blue-600 to-blue-700"
-                      : "bg-gradient-to-r from-purple-600 to-purple-700"
-                }`} />
-                <div className="px-4 sm:px-6 pb-4">
-                  {/* Mobile: Stack photo and info | Desktop: Side by side */}
-                  <div className="relative -mt-20 sm:-mt-44 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-5">
-                    <img
-                      src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
-                      alt={legislator.full_name}
-                      className="w-32 h-40 sm:w-64 sm:h-80 object-cover rounded-lg border-4 border-white shadow-lg bg-gray-200 flex-shrink-0"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/256x320?text=No+Photo";
-                      }}
-                    />
-                    <div className="flex-1 pb-2">
-                      {/* Tags and name - aligned with bottom of photo */}
-                      <div className="mb-2 sm:mb-4">
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 border border-gray-300">
-                            {legislator.chamber}
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 border border-gray-300">
-                            {legislator.party}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                            {legislator.full_name}
-                          </h2>
-                          {user && (
-                            <button
-                              onClick={() => toggleFavorite(legislator.bioguide_id)}
-                              className="p-1.5 sm:p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                              aria-label={isFavorite(legislator.bioguide_id) ? "Remove from favorites" : "Add to favorites"}
-                            >
-                              <svg
-                                className={`w-5 h-5 sm:w-6 sm:h-6 ${isFavorite(legislator.bioguide_id) ? "fill-red-500 stroke-red-500" : "fill-none stroke-gray-500"}`}
-                                viewBox="0 0 24 24"
-                                strokeWidth={2}
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
-                                />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                        <p className="text-sm sm:text-base text-gray-600">{position}</p>
+              <div className="px-4 sm:px-6 pb-4 pt-16">
+                {/* Mobile: Stack photo and info | Desktop: Side by side */}
+                <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-5">
+                  <img
+                    src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                    alt={legislator.full_name}
+                    className="w-32 h-40 sm:w-48 sm:h-60 object-cover rounded-lg border-2 border-gray-200 shadow-lg bg-gray-200 flex-shrink-0"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://via.placeholder.com/192x240?text=No+Photo";
+                    }}
+                  />
+                  <div className="flex-1">
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        legislator.party === "Republican" 
+                          ? "bg-red-100 text-red-700"
+                          : legislator.party === "Democrat"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-purple-100 text-purple-700"
+                      }`}>
+                        {legislator.party}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        legislator.chamber === "Senate" 
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-emerald-100 text-emerald-700"
+                      }`}>
+                        {legislator.chamber}
+                      </span>
+                    </div>
+                    
+                    {/* Name and favorite */}
+                    <div className="flex items-center gap-2 sm:gap-3 mb-1">
+                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                        {legislator.full_name}
+                      </h2>
+                      {user && (
+                        <button
+                          onClick={() => toggleFavorite(legislator.bioguide_id)}
+                          className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                          aria-label={isFavorite(legislator.bioguide_id) ? "Remove from favorites" : "Add to favorites"}
+                        >
+                          <svg
+                            className={`w-5 h-5 sm:w-6 sm:h-6 ${isFavorite(legislator.bioguide_id) ? "fill-red-500 stroke-red-500" : "fill-none stroke-gray-400"}`}
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Position */}
+                    <p className="text-sm sm:text-base text-gray-600">{position}</p>
+                    
+                    {/* Age and Term Ends */}
+                    <p className="text-sm text-gray-500 mb-3">
+                      {legislator.birthday && <span>{calculateAge(legislator.birthday)} years old</span>}
+                      {legislator.birthday && legislator.term_end && <span> · </span>}
+                      {legislator.term_end && <span>Term ends {formatDate(legislator.term_end)}</span>}
+                    </p>
+                    
+                    {/* Contact info */}
+                    <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
+                      {legislator.phone && (
+                        <a href={`tel:${legislator.phone}`} className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                          {legislator.phone}
+                        </a>
+                      )}
+                      {legislator.office && (
+                        <span className="flex items-center gap-1.5 text-gray-500">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {legislator.office}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm mt-2">
+                      {legislator.website && (
+                        <a href={legislator.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                          </svg>
+                          Website
+                        </a>
+                      )}
+                      {legislator.contact_form && (
+                        <a href={legislator.contact_form} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          Contact Form
+                        </a>
+                      )}
+                    </div>
+                    
+                    {/* Quick stats row */}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-4 pt-4 border-t border-gray-200 text-sm">
+                      <div>
+                        <span className="text-gray-500">{legislator.chamber === "Senate" ? "Class:" : "District:"}</span>{" "}
+                        <span className="font-medium text-gray-900">
+                          {legislator.chamber === "Senate" 
+                            ? legislator.senate_class 
+                            : legislator.district === 0 ? "At-Large" : legislator.district}
+                        </span>
                       </div>
+                      <div>
+                        <span className="text-gray-500">Terms:</span>{" "}
+                        <span className="font-medium text-gray-900">{formatTermCount(legislator)}</span>
+                      </div>
+                      {legislator.first_term_start && (
+                        <div>
+                          <span className="text-gray-500">Years:</span>{" "}
+                          <span className="font-medium text-gray-900">{calculateYearsOfService(legislator.first_term_start)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -467,73 +558,6 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
 
               {/* Details */}
               <div className="px-4 sm:px-6 pb-6 space-y-4 sm:space-y-6">
-                {/* Contact Info - Inline */}
-                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
-                  {legislator.phone && (
-                    <a href={`tel:${legislator.phone}`} className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800">
-                      📞 {legislator.phone}
-                    </a>
-                  )}
-                  {legislator.office && (
-                    <div className="flex items-center gap-1.5 text-gray-600">
-                      🏛️ {legislator.office}
-                    </div>
-                  )}
-                  {legislator.website && (
-                    <a href={legislator.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800">
-                      🌐 Website →
-                    </a>
-                  )}
-                  {legislator.contact_form && (
-                    <a href={legislator.contact_form} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800">
-                      ✉️ Contact →
-                    </a>
-                  )}
-                </div>
-
-                {/* Quick Info (State/District first) */}
-                <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                    <div className="text-xs text-gray-500 uppercase">State</div>
-                    <div className="font-medium text-sm sm:text-base text-gray-900">{STATE_NAMES[legislator.state]}</div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                    <div className="text-xs text-gray-500 uppercase">
-                      {legislator.chamber === "Senate" ? "Class" : "District"}
-                    </div>
-                    <div className="font-medium text-sm sm:text-base text-gray-900">
-                      {legislator.chamber === "Senate"
-                        ? `Class ${legislator.senate_class}`
-                        : legislator.district === 0 ? "At-Large" : `District ${legislator.district}`}
-                    </div>
-                  </div>
-                  {legislator.first_term_start && (
-                    <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                      <div className="text-xs text-gray-500 uppercase">Entered Congress</div>
-                      <div className="font-medium text-sm sm:text-base text-gray-900">{new Date(legislator.first_term_start).getFullYear()}</div>
-                    </div>
-                  )}
-                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                    <div className="text-xs text-gray-500 uppercase">Terms Served</div>
-                    <div className="font-medium text-sm sm:text-base text-gray-900">{formatTermCount(legislator)}</div>
-                  </div>
-                  {legislator.first_term_start && (
-                    <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                      <div className="text-xs text-gray-500 uppercase">Years in Congress</div>
-                      <div className="font-medium text-sm sm:text-base text-gray-900">{calculateYearsOfService(legislator.first_term_start)}</div>
-                    </div>
-                  )}
-                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                    <div className="text-xs text-gray-500 uppercase">Term Ends</div>
-                    <div className="font-medium text-sm sm:text-base text-gray-900">{formatDate(legislator.term_end)}</div>
-                  </div>
-                  {legislator.birthday && (
-                    <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                      <div className="text-xs text-gray-500 uppercase">Age</div>
-                      <div className="font-medium text-sm sm:text-base text-gray-900">{calculateAge(legislator.birthday)} years old</div>
-                    </div>
-                  )}
-                </div>
 
                 {/* Ideology Score */}
                 {legislator.ideology_score !== undefined && legislator.ideology_score !== null && (
