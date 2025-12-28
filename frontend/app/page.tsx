@@ -107,15 +107,15 @@ const NEWS_MENTIONS_OPTIONS = [
 ];
 
 const SORT_OPTIONS = [
-  { key: "name", label: "Name" },
-  { key: "age", label: "Age" },
+  { key: "enacted", label: "Bills Enacted" },
+  { key: "news", label: "News Mentions" },
+  { key: "ideology", label: "Ideology" },
   { key: "terms", label: "Terms Served" },
   { key: "years", label: "Time in Congress" },
-  { key: "enacted", label: "Bills Enacted" },
-  { key: "sponsored", label: "Bills Sponsored" },
-  { key: "ideology", label: "Ideology" },
-  { key: "news", label: "News Mentions" },
+  { key: "age", label: "Age" },
   { key: "state", label: "State" },
+  { key: "name", label: "Name" },
+  { key: "sponsored", label: "Bills Sponsored" },
 ];
 
 function getYearsInCongress(firstTermStart?: string): number {
@@ -235,6 +235,7 @@ function HomeContent() {
     state: false,
   });
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [zipResults, setZipResults] = useState<Legislator[]>([]);
   const [zipLoading, setZipLoading] = useState(false);
@@ -412,14 +413,52 @@ function HomeContent() {
       return chamberMatch && stateMatch && partyMatch && genderMatch && yearsMatch && billsMatch && newsMatch && favoritesMatch;
     });
 
+    // Apply search filter (OR search across name, party, state)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((legislator) => {
+        const nameMatch = legislator.full_name.toLowerCase().includes(query) ||
+                          legislator.first_name.toLowerCase().includes(query) ||
+                          legislator.last_name.toLowerCase().includes(query);
+        const partyMatch = legislator.party.toLowerCase().includes(query);
+        const stateMatch = legislator.state.toLowerCase().includes(query) ||
+                          (STATE_NAMES[legislator.state] || "").toLowerCase().includes(query);
+        return nameMatch || partyMatch || stateMatch;
+      });
+
+      // Weight results: name matches first, then party, then state
+      filtered.sort((a, b) => {
+        const aNameMatch = a.full_name.toLowerCase().includes(query) ||
+                           a.first_name.toLowerCase().includes(query) ||
+                           a.last_name.toLowerCase().includes(query);
+        const bNameMatch = b.full_name.toLowerCase().includes(query) ||
+                           b.first_name.toLowerCase().includes(query) ||
+                           b.last_name.toLowerCase().includes(query);
+        
+        if (aNameMatch && !bNameMatch) return -1;
+        if (!aNameMatch && bNameMatch) return 1;
+        
+        const aPartyMatch = a.party.toLowerCase().includes(query);
+        const bPartyMatch = b.party.toLowerCase().includes(query);
+        
+        if (aPartyMatch && !bPartyMatch) return -1;
+        if (!aPartyMatch && bPartyMatch) return 1;
+        
+        return 0;
+      });
+      
+      // Skip other sorting when search is active
+      return filtered;
+    }
+
     // When sorting by ideology, exclude members without ideology scores
     if (sortBy === "ideology") {
       filtered = filtered.filter(l => l.ideology_score != null);
     }
 
-    // When sorting by news, exclude members without news data
+    // When sorting by news, exclude members without news data or with 0 mentions
     if (sortBy === "news") {
-      filtered = filtered.filter(l => l.news_mentions != null);
+      filtered = filtered.filter(l => l.news_mentions != null && l.news_mentions > 0);
     }
 
     // Sort the filtered results
@@ -468,7 +507,7 @@ function HomeContent() {
     });
 
     return sorted;
-  }, [legislators, filters, sortBy, sortDirection, showFavoritesOnly, favorites]);
+  }, [legislators, filters, sortBy, sortDirection, showFavoritesOnly, favorites, searchQuery]);
 
   const toggleFilter = (filterType: keyof Filters, value: string) => {
     const current = filters[filterType];
@@ -923,39 +962,43 @@ function HomeContent() {
                 </p>
               </div>
             </div>
-                        <div className="flex items-center gap-3">
-              {user && (
-                <button
-                  onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    showFavoritesOnly
-                      ? "bg-red-100 text-red-700"
-                      : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
+            
+            {/* Search field */}
+            <div className="flex-1 max-w-md mx-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name, party, or state..."
+                  className="w-full px-4 py-2 pl-10 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg
-                    className={`w-5 h-5 ${showFavoritesOnly ? "fill-red-500" : "fill-none stroke-current"}`}
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
-                    />
-                  </svg>
-                  {showFavoritesOnly ? "Showing Favorites" : "Favorites"}
-                  {favorites.size > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                      showFavoritesOnly ? "bg-red-200" : "bg-gray-200"
-                    }`}>
-                      {favorites.size}
-                    </span>
-                  )}
-                </button>
-              )}
-              <UserMenu />
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
+
+            <UserMenu 
+              showFavoritesOnly={showFavoritesOnly}
+              setShowFavoritesOnly={setShowFavoritesOnly}
+              favoritesCount={favorites.size}
+            />
           </div>
         </div>
       </div>
