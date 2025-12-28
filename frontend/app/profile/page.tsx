@@ -19,6 +19,7 @@ interface Legislator {
   first_term_start?: string;
   birthday?: string;
   ideology_score?: number;
+  news_mentions?: number;
 }
 
 interface UserProfile {
@@ -151,6 +152,7 @@ export default function ProfilePage() {
             first_term_start: data.first_term_start,
             birthday: data.birthday,
             ideology_score: data.ideology_score,
+            news_mentions: data.news_mentions,
           };
         });
         
@@ -340,7 +342,7 @@ export default function ProfilePage() {
                   </p>
                   
                   {/* Stats row */}
-                  <div className="grid grid-cols-4 gap-2 text-center">
+                  <div className="grid grid-cols-5 gap-1.5 text-center">
                     <div className="bg-black/40 rounded-lg py-2 px-1">
                       <div className="text-lg font-bold">{legislator.enacted_count || 0}</div>
                       <div className="text-[10px] text-gray-300 uppercase">Bills</div>
@@ -352,6 +354,10 @@ export default function ProfilePage() {
                     <div className="bg-black/40 rounded-lg py-2 px-1">
                       <div className="text-lg font-bold">{legislator.birthday ? calculateAge(legislator.birthday) : "—"}</div>
                       <div className="text-[10px] text-gray-300 uppercase">Age</div>
+                    </div>
+                    <div className="bg-black/40 rounded-lg py-2 px-1">
+                      <div className="text-lg font-bold">{legislator.news_mentions ?? "—"}</div>
+                      <div className="text-[10px] text-gray-300 uppercase">News</div>
                     </div>
                     <div className={`rounded-lg py-2 px-1 ${
                       legislator.ideology_score === undefined 

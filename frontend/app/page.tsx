@@ -37,6 +37,7 @@ interface Legislator {
   enacted_count?: number;
   ideology_score?: number;
   leadership_score?: number;
+  news_mentions?: number;
 }
 
 interface Filters {
@@ -46,6 +47,7 @@ interface Filters {
   gender: string[];
   yearsInCongress: string[];
   billsEnacted: string[];
+  newsMentions: string[];
 }
 
 const STATE_NAMES: Record<string, string> = {
@@ -97,6 +99,13 @@ const BILLS_ENACTED_OPTIONS = [
   { key: "moreThan25", label: "More than 25 bills", min: 26 },
 ];
 
+const NEWS_MENTIONS_OPTIONS = [
+  { key: "zero", label: "0 articles", min: 0, max: 0 },
+  { key: "atLeast5", label: "5+ articles", min: 5 },
+  { key: "atLeast25", label: "25+ articles", min: 25 },
+  { key: "atLeast100", label: "100+ articles", min: 100 },
+];
+
 const SORT_OPTIONS = [
   { key: "name", label: "Name" },
   { key: "age", label: "Age" },
@@ -105,6 +114,7 @@ const SORT_OPTIONS = [
   { key: "enacted", label: "Bills Enacted" },
   { key: "sponsored", label: "Bills Sponsored" },
   { key: "ideology", label: "Ideology" },
+  { key: "news", label: "News Mentions" },
   { key: "state", label: "State" },
 ];
 
@@ -145,6 +155,30 @@ function getBillsEnactedBuckets(enactedCount?: number): string[] {
   return buckets;
 }
 
+function getNewsMentionsBuckets(newsMentions?: number): string[] {
+  const count = newsMentions ?? -1; // Use -1 for undefined/null
+  const buckets: string[] = [];
+  
+  // Handle "zero" case
+  if (count === 0) {
+    buckets.push("zero");
+    return buckets;
+  }
+  
+  // Handle undefined (no data yet)
+  if (count < 0) {
+    return buckets;
+  }
+  
+  // Handle other cases (cumulative)
+  for (const option of NEWS_MENTIONS_OPTIONS) {
+    if (option.key !== "zero" && count >= option.min) {
+      buckets.push(option.key);
+    }
+  }
+  return buckets;
+}
+
 function getBillsTriangleColor(enactedCount?: number): string | null {
   const count = enactedCount || 0;
   if (count === 0) return null; // No triangle
@@ -152,6 +186,14 @@ function getBillsTriangleColor(enactedCount?: number): string | null {
   if (count >= 11) return "border-b-yellow-400"; // 10+
   if (count >= 6) return "border-b-gray-500"; // 5+
   return "border-b-gray-300"; // 1+
+}
+
+function getNewsTriangleColor(newsMentions?: number): string | null {
+  if (newsMentions === undefined || newsMentions === null || newsMentions === 0) return null; // No triangle
+  if (newsMentions >= 100) return "border-t-red-600"; // 100+ (hot)
+  if (newsMentions >= 25) return "border-t-orange-500"; // 25+
+  if (newsMentions >= 5) return "border-t-yellow-500"; // 5+
+  return "border-t-yellow-300"; // 1-4
 }
 
 function HomeContent() {
@@ -171,6 +213,7 @@ function HomeContent() {
     gender: [],
     yearsInCongress: [],
     billsEnacted: [],
+    newsMentions: [],
   });
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [gridSize, setGridSize] = useState<number>(2); // 1-4 scale, default 2
@@ -188,6 +231,7 @@ function HomeContent() {
     gender: false,
     yearsInCongress: false,
     billsEnacted: false,
+    newsMentions: false,
     state: false,
   });
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -282,7 +326,7 @@ function HomeContent() {
     const yearsInCongress = searchParams.get("years")?.split(",").filter(Boolean) || [];
     const billsEnacted = searchParams.get("enacted")?.split(",").filter(Boolean) || [];
     
-    setFilters({ chamber, state, party, gender, yearsInCongress, billsEnacted });
+    setFilters({ chamber, state, party, gender, yearsInCongress, billsEnacted, newsMentions: searchParams.get("news")?.split(",").filter(Boolean) || [] });
     
     // Check for member param to auto-open slide-out panel
     const member = searchParams.get("member");
@@ -300,6 +344,7 @@ function HomeContent() {
     if (newFilters.gender.length > 0) params.set("gender", newFilters.gender.join(","));
     if (newFilters.yearsInCongress.length > 0) params.set("years", newFilters.yearsInCongress.join(","));
     if (newFilters.billsEnacted.length > 0) params.set("enacted", newFilters.billsEnacted.join(","));
+    if (newFilters.newsMentions.length > 0) params.set("news", newFilters.newsMentions.join(","));
     
     const queryString = params.toString();
     router.push(queryString ? `?${queryString}` : "/", { scroll: false });
@@ -362,13 +407,19 @@ function HomeContent() {
       const genderMatch = filters.gender.length === 0 || filters.gender.includes(legislator.gender);
       const yearsMatch = filters.yearsInCongress.length === 0 || filters.yearsInCongress.includes(getYearsInCongressBucket(legislator.first_term_start));
       const billsMatch = filters.billsEnacted.length === 0 || filters.billsEnacted.some((bucket: string) => getBillsEnactedBuckets(legislator.enacted_count).includes(bucket));
+      const newsMatch = filters.newsMentions.length === 0 || filters.newsMentions.some((bucket: string) => getNewsMentionsBuckets(legislator.news_mentions).includes(bucket));
       const favoritesMatch = !showFavoritesOnly || isFavorite(legislator.bioguide_id);
-      return chamberMatch && stateMatch && partyMatch && genderMatch && yearsMatch && billsMatch && favoritesMatch;
+      return chamberMatch && stateMatch && partyMatch && genderMatch && yearsMatch && billsMatch && newsMatch && favoritesMatch;
     });
 
     // When sorting by ideology, exclude members without ideology scores
     if (sortBy === "ideology") {
       filtered = filtered.filter(l => l.ideology_score != null);
+    }
+
+    // When sorting by news, exclude members without news data
+    if (sortBy === "news") {
+      filtered = filtered.filter(l => l.news_mentions != null);
     }
 
     // Sort the filtered results
@@ -402,6 +453,10 @@ function HomeContent() {
           // All members here have ideology scores (filtered above)
           comparison = a.ideology_score! - b.ideology_score!;
           break;
+        case "news":
+          // All members here have news data (filtered above)
+          comparison = (b.news_mentions || 0) - (a.news_mentions || 0);
+          break;
         case "state":
           comparison = a.state.localeCompare(b.state);
           break;
@@ -426,7 +481,7 @@ function HomeContent() {
   };
 
   const clearFilters = () => {
-    const newFilters = { chamber: [], state: [], party: [], gender: [], yearsInCongress: [], billsEnacted: [] };
+    const newFilters = { chamber: [], state: [], party: [], gender: [], yearsInCongress: [], billsEnacted: [], newsMentions: [] };
     setFilters(newFilters);
     updateURL(newFilters);
   };
@@ -443,6 +498,9 @@ function HomeContent() {
         if (key === "billsEnacted") {
           return values.some((bucket: string) => getBillsEnactedBuckets(legislator.enacted_count).includes(bucket));
         }
+        if (key === "newsMentions") {
+          return values.some((bucket: string) => getNewsMentionsBuckets(legislator.news_mentions).includes(bucket));
+        }
         return values.includes(legislator[key as keyof Legislator] as string);
       });
       if (passesOtherFilters) {
@@ -451,6 +509,11 @@ function HomeContent() {
           counts[bucket] = (counts[bucket] || 0) + 1;
         } else if (filterType === "billsEnacted") {
           const buckets = getBillsEnactedBuckets(legislator.enacted_count);
+          buckets.forEach(bucket => {
+            counts[bucket] = (counts[bucket] || 0) + 1;
+          });
+        } else if (filterType === "newsMentions") {
+          const buckets = getNewsMentionsBuckets(legislator.news_mentions);
           buckets.forEach(bucket => {
             counts[bucket] = (counts[bucket] || 0) + 1;
           });
@@ -539,7 +602,8 @@ function HomeContent() {
   const genderCounts = getCounts("gender");
   const yearsCounts = getCounts("yearsInCongress");
   const billsEnactedCounts = getCounts("billsEnacted");
-  const hasActiveFilters = filters.chamber.length > 0 || filters.state.length > 0 || filters.party.length > 0 || filters.gender.length > 0 || filters.yearsInCongress.length > 0 || filters.billsEnacted.length > 0;
+  const newsMentionsCounts = getCounts("newsMentions");
+  const hasActiveFilters = filters.chamber.length > 0 || filters.state.length > 0 || filters.party.length > 0 || filters.gender.length > 0 || filters.yearsInCongress.length > 0 || filters.billsEnacted.length > 0 || filters.newsMentions.length > 0;
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -614,7 +678,7 @@ function HomeContent() {
               onClick={() => toggleCollapse('filtersSection')}
               className="flex items-center justify-between w-full p-3 bg-gray-100 rounded-lg font-semibold text-gray-800 hover:bg-gray-200"
             >
-              <span>Filters {hasActiveFilters && `(${filters.chamber.length + filters.party.length + filters.gender.length + filters.state.length + filters.yearsInCongress.length + filters.billsEnacted.length})`}</span>
+              <span>Filters {hasActiveFilters && `(${filters.chamber.length + filters.party.length + filters.gender.length + filters.state.length + filters.yearsInCongress.length + filters.billsEnacted.length + filters.newsMentions.length})`}</span>
               <span className={`text-gray-500 transition-transform duration-200 ${collapsed.filtersSection ? '' : 'rotate-90'}`}>▶</span>
             </button>
             {!collapsed.filtersSection && (
@@ -708,6 +772,35 @@ function HomeContent() {
                           <span className="text-sm text-gray-700">{option.label}</span>
                           <span className="text-sm text-gray-400 ml-auto">
                             ({billsEnactedCounts[option.key] || 0})
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* News Mentions Filter */}
+                <div className="mb-4">
+                  <button 
+                    onClick={() => toggleCollapse('newsMentions')}
+                    className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
+                  >
+                    <span>News Mentions</span>
+                    <span className={`text-gray-400 transition-transform duration-200 ${collapsed.newsMentions ? '' : 'rotate-90'}`}>▶</span>
+                  </button>
+                  {!collapsed.newsMentions && (
+                    <div className="space-y-2 ml-2">
+                      {NEWS_MENTIONS_OPTIONS.map((option) => (
+                        <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.newsMentions.includes(option.key)}
+                            onChange={() => toggleFilter("newsMentions", option.key)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{option.label}</span>
+                          <span className="text-sm text-gray-400 ml-auto">
+                            ({newsMentionsCounts[option.key] || 0})
                           </span>
                         </label>
                       ))}
@@ -1236,14 +1329,38 @@ function HomeContent() {
                     key={legislator.id}
                     className="relative rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden cursor-pointer aspect-[3/4]"
                   >
-                    {/* Favorite button */}
+                    {/* News mentions triangle in upper left */}
+                    {getNewsTriangleColor(legislator.news_mentions) && (
+                      <>
+                        <div 
+                          className={`absolute top-0 left-0 w-0 h-0 border-r-transparent pointer-events-none ${
+                            gridSize === 1 ? "border-t-[120px] border-r-[120px]" :
+                            gridSize === 2 ? "border-t-[80px] border-r-[80px]" :
+                            gridSize === 3 ? "border-t-[60px] border-r-[60px]" :
+                            gridSize === 4 ? "border-t-[40px] border-r-[40px]" :
+                            "border-t-[30px] border-r-[30px]"
+                          } ${getNewsTriangleColor(legislator.news_mentions)}`}
+                        />
+                        <span className={`absolute pointer-events-none text-white font-black drop-shadow-md ${
+                          gridSize === 1 ? "top-2 left-3 text-3xl" :
+                          gridSize === 2 ? "top-1 left-2 text-xl" :
+                          gridSize === 3 ? "top-1 left-1.5 text-sm" :
+                          gridSize === 4 ? "top-0.5 left-1 text-xs" :
+                          "top-0 left-0.5 text-[8px]"
+                        }`}>
+                          {legislator.news_mentions}
+                        </span>
+                      </>
+                    )}
+                    
+                    {/* Favorite button - middle left */}
                     {user && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleFavorite(legislator.bioguide_id);
                         }}
-                        className={`absolute top-1 left-1 rounded-full bg-black/30 hover:bg-black/50 transition-colors z-10 ${
+                        className={`absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-black/30 hover:bg-black/50 transition-colors z-10 ${
                           gridSize >= 4 ? "p-0.5" : "p-1.5"
                         }`}
                         aria-label={isFavorite(legislator.bioguide_id) ? "Remove from favorites" : "Add to favorites"}

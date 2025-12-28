@@ -33,6 +33,13 @@ interface Legislator {
   house_terms?: number;
   ideology_score?: number;
   leadership_score?: number;
+  news_mentions?: number;
+  news_sample_headlines?: Array<{
+    title: string;
+    source: string;
+    date: string;
+    url: string;
+  }>;
   external_ids: {
     thomas?: string;
     govtrack?: number;
@@ -357,15 +364,32 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        {/* Close button - fixed position within panel */}
-        <button
-          onClick={onClose}
-          className="fixed top-4 right-4 sm:absolute w-10 h-10 flex items-center justify-center bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full shadow-lg border border-gray-200 z-[100] transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        {/* Top action buttons - fixed position within panel */}
+        <div className="fixed top-4 right-4 sm:absolute flex items-center gap-2 z-[100]">
+          {/* Share Card button */}
+          {legislator && (
+            <a
+              href={`/card/${legislator.bioguide_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-10 h-10 flex items-center justify-center bg-white text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full shadow-lg border border-gray-200 transition-colors"
+              title="Share Card"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            </a>
+          )}
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full shadow-lg border border-gray-200 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
         {/* Content */}
         <div className="h-full overflow-y-auto">
@@ -465,14 +489,6 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                       ✉️ Contact →
                     </a>
                   )}
-                  <a 
-                    href={`/card/${legislator.bioguide_id}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800"
-                  >
-                    🃏 Share Card →
-                  </a>
                 </div>
 
                 {/* Quick Info (State/District first) */}
@@ -632,6 +648,45 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                     <div className="text-gray-500 text-sm">Unable to load legislation data</div>
                   )}
                 </div>
+
+                {/* News Mentions */}
+                {legislator.news_mentions !== undefined && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 sm:mb-3">
+                      Media Presence
+                      <span className="ml-2 text-xs font-normal normal-case bg-gray-100 px-2 py-0.5 rounded">
+                        Last 30 days
+                      </span>
+                    </h3>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="text-center">
+                          <div className="text-3xl font-bold text-gray-900">{legislator.news_mentions}</div>
+                          <div className="text-xs text-gray-500">News Articles</div>
+                        </div>
+                        {legislator.news_sample_headlines && legislator.news_sample_headlines.length > 0 && (
+                          <div className="flex-1 border-l border-gray-200 pl-4">
+                            <div className="text-xs text-gray-500 mb-1">Recent Headlines</div>
+                            <div className="space-y-1">
+                              {legislator.news_sample_headlines.slice(0, 2).map((headline: { title: string; source: string; url: string }, idx: number) => (
+                                <a 
+                                  key={idx}
+                                  href={headline.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block text-xs text-blue-600 hover:text-blue-800 truncate"
+                                  title={headline.title}
+                                >
+                                  {headline.source}: {headline.title}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Committees */}
                 {committees && committees.committees.length > 0 && (

@@ -16,6 +16,7 @@ interface Legislator {
   first_term_start?: string;
   birthday?: string;
   ideology_score?: number;
+  news_mentions?: number;
 }
 
 const STATE_NAMES: Record<string, string> = {
@@ -176,7 +177,7 @@ export default function MemberCardPage() {
             </p>
             
             {/* Stats row */}
-            <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-5 gap-1.5 text-center">
               <div className="bg-black/50 rounded-lg py-2 px-1">
                 <div className="text-xl font-bold">{legislator.enacted_count || 0}</div>
                 <div className="text-[10px] text-gray-300 uppercase tracking-wide">Bills</div>
@@ -188,6 +189,10 @@ export default function MemberCardPage() {
               <div className="bg-black/50 rounded-lg py-2 px-1">
                 <div className="text-xl font-bold">{legislator.birthday ? calculateAge(legislator.birthday) : "—"}</div>
                 <div className="text-[10px] text-gray-300 uppercase tracking-wide">Age</div>
+              </div>
+              <div className="bg-black/50 rounded-lg py-2 px-1">
+                <div className="text-xl font-bold">{legislator.news_mentions ?? "—"}</div>
+                <div className="text-[10px] text-gray-300 uppercase tracking-wide">News</div>
               </div>
               <div className={`rounded-lg py-2 px-1 ${
                 legislator.ideology_score === undefined 
