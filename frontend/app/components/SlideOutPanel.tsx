@@ -465,6 +465,14 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                       ✉️ Contact →
                     </a>
                   )}
+                  <a 
+                    href={`/card/${legislator.bioguide_id}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800"
+                  >
+                    🃏 Share Card →
+                  </a>
                 </div>
 
                 {/* Quick Info (State/District first) */}

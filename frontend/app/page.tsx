@@ -283,6 +283,12 @@ function HomeContent() {
     const billsEnacted = searchParams.get("enacted")?.split(",").filter(Boolean) || [];
     
     setFilters({ chamber, state, party, gender, yearsInCongress, billsEnacted });
+    
+    // Check for member param to auto-open slide-out panel
+    const member = searchParams.get("member");
+    if (member) {
+      setSelectedLegislator(member);
+    }
   }, [searchParams]);
 
   // Update URL when filters change
