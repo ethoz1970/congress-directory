@@ -218,7 +218,7 @@ function HomeContent() {
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [gridSize, setGridSize] = useState<number>(2); // 1-4 scale, default 2
   const [selectedLegislator, setSelectedLegislator] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<string>("name");
+  const [sortBy, setSortBy] = useState<string>("news");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [heroVisible, setHeroVisible] = useState(true);
   const [heroSlide, setHeroSlide] = useState(0);
@@ -1329,6 +1329,22 @@ function HomeContent() {
                     key={legislator.id}
                     className="relative rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden cursor-pointer aspect-[3/4]"
                   >
+                    {/* Full image background */}
+                    <img
+                      src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                      alt={legislator.full_name}
+                      className="absolute inset-0 w-full h-full object-cover bg-gray-200 pointer-events-none"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x400?text=No+Photo";
+                      }}
+                    />
+                    
+                    {/* Clickable area for opening panel */}
+                    <div 
+                      className="absolute inset-0"
+                      onClick={() => setSelectedLegislator(legislator.bioguide_id)}
+                    />
+                    
                     {/* News mentions triangle in upper left */}
                     {getNewsTriangleColor(legislator.news_mentions) && (
                       <>
@@ -1378,22 +1394,6 @@ function HomeContent() {
                         </svg>
                       </button>
                     )}
-                    
-                    {/* Clickable area for opening panel */}
-                    <div 
-                      className="absolute inset-0"
-                      onClick={() => setSelectedLegislator(legislator.bioguide_id)}
-                    />
-                    
-                    {/* Full image background */}
-                    <img
-                      src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
-                      alt={legislator.full_name}
-                      className="absolute inset-0 w-full h-full object-cover bg-gray-200 pointer-events-none"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x400?text=No+Photo";
-                      }}
-                    />
                     
                     {/* Party color triangle in upper right with chamber letter */}
                     <div 
