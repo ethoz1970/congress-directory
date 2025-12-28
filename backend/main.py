@@ -96,6 +96,32 @@ def get_cached_legislator(bioguide_id: str):
 def hello():
     return {"message": "Hello from Python!"}
 
+@app.post("/api/cache/clear")
+def clear_cache():
+    """Clear the in-memory cache to force fresh data from Firestore."""
+    cache["legislators"]["data"] = None
+    cache["legislators"]["expires"] = None
+    cache["legislators_by_id"] = {}
+    return {"message": "Cache cleared successfully"}
+
+@app.get("/api/cache/status")
+def cache_status():
+    """Check the current cache status."""
+    now = datetime.now()
+    legislators_cached = cache["legislators"]["data"] is not None
+    legislators_expires = cache["legislators"]["expires"]
+    expires_in = None
+    if legislators_expires:
+        expires_in = (legislators_expires - now).total_seconds()
+    
+    return {
+        "legislators_cached": legislators_cached,
+        "legislators_count": len(cache["legislators"]["data"]) if legislators_cached else 0,
+        "individual_cached": len(cache["legislators_by_id"]),
+        "expires_in_seconds": expires_in,
+        "cache_duration_hours": CACHE_DURATION.total_seconds() / 3600
+    }
+
 # ============ LEGISLATOR ENDPOINTS ============
 
 @app.get("/api/legislators")
