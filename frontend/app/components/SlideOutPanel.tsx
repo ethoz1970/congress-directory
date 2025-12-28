@@ -33,6 +33,9 @@ interface Legislator {
   house_terms?: number;
   ideology_score?: number;
   leadership_score?: number;
+  sponsored_count?: number;
+  cosponsored_count?: number;
+  enacted_count?: number;
   news_mentions?: number;
   news_sample_headlines?: Array<{
     title: string;
@@ -69,28 +72,6 @@ interface CommitteesData {
   bioguide_id: string;
   committees: CommitteeAssignment[];
   subcommittees: CommitteeAssignment[];
-}
-
-interface Bill {
-  congress: number;
-  type: string;
-  number: number;
-  title?: string;
-  latestAction?: {
-    actionDate: string;
-    text: string;
-  };
-  introducedDate?: string;
-  url?: string;
-}
-
-interface LegislationSummary {
-  bioguide_id: string;
-  sponsored_count: number;
-  cosponsored_count: number;
-  enacted_count: number;
-  recent_sponsored: Bill[];
-  recent_enacted: Bill[];
 }
 
 interface YouTubeVideo {
@@ -214,29 +195,11 @@ function formatDate(dateString: string): string {
   });
 }
 
-function getBillUrl(bill: Bill): string {
-  if (!bill || !bill.type) return "#";
-  const typeMap: Record<string, string> = {
-    HR: "house-bill",
-    S: "senate-bill",
-    HJRES: "house-joint-resolution",
-    SJRES: "senate-joint-resolution",
-    HCONRES: "house-concurrent-resolution",
-    SCONRES: "senate-concurrent-resolution",
-    HRES: "house-resolution",
-    SRES: "senate-resolution",
-  };
-  const billType = typeMap[bill.type] || bill.type.toLowerCase();
-  return `https://www.congress.gov/bill/${bill.congress}th-congress/${billType}/${bill.number}`;
-}
-
 export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProps) {
   const { user } = useAuth();
   const { toggleFavorite, isFavorite } = useFavorites();
   const [legislator, setLegislator] = useState<Legislator | null>(null);
   const [committees, setCommittees] = useState<CommitteesData | null>(null);
-  const [legislation, setLegislation] = useState<LegislationSummary | null>(null);
-  const [legislationLoading, setLegislationLoading] = useState(true);
   const [youtubeVideos, setYoutubeVideos] = useState<YouTubeVideo[]>([]);
   const [youtubeLoading, setYoutubeLoading] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
@@ -250,14 +213,12 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
     if (!bioguideId) {
       setLegislator(null);
       setCommittees(null);
-      setLegislation(null);
       setYoutubeVideos([]);
       setSelectedVideo(null);
       return;
     }
 
     setLoading(true);
-    setLegislationLoading(true);
     setYoutubeLoading(true);
     setError(null);
     setShowAllSubcommittees(false);
@@ -302,20 +263,6 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
       })
       .catch(() => {
         setCommittees(null);
-      });
-
-    fetch(`${API_URL}/api/legislators/${bioguideId}/legislation-summary`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch");
-        return res.json();
-      })
-      .then((data) => {
-        setLegislation(data);
-        setLegislationLoading(false);
-      })
-      .catch(() => {
-        setLegislation(null);
-        setLegislationLoading(false);
       });
   }, [bioguideId]);
 
@@ -600,77 +547,22 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                 <div>
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 sm:mb-3">
                     Legislative Activity
-                    <span className="ml-2 text-xs font-normal normal-case bg-gray-100 px-2 py-0.5 rounded">
-                      Live from Congress.gov
-                    </span>
                   </h3>
                   
-                  {legislationLoading ? (
-                    <div className="text-gray-500 text-sm">Loading...</div>
-                  ) : legislation ? (
-                    <div>
-                      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
-                        <div className="bg-blue-50 rounded-lg p-2 sm:p-3 text-center">
-                          <div className="text-xl sm:text-2xl font-bold text-blue-700">{legislation.sponsored_count}</div>
-                          <div className="text-xs text-blue-600">Sponsored</div>
-                        </div>
-                        <div className="bg-green-50 rounded-lg p-2 sm:p-3 text-center">
-                          <div className="text-xl sm:text-2xl font-bold text-green-700">{legislation.cosponsored_count}</div>
-                          <div className="text-xs text-green-600">Cosponsored</div>
-                        </div>
-                        <div className="bg-amber-50 rounded-lg p-2 sm:p-3 text-center">
-                          <div className="text-xl sm:text-2xl font-bold text-amber-700">{legislation.enacted_count || 0}</div>
-                          <div className="text-xs text-amber-600">Signed into Law</div>
-                        </div>
-                      </div>
-
-                      {legislation.recent_enacted && legislation.recent_enacted.length > 0 && (
-                        <div className="mb-4">
-                          <div className="text-xs text-gray-500 mb-2">Recent Bills Signed into Law</div>
-                          <div className="space-y-2">
-                            {legislation.recent_enacted.slice(0, 3).map((bill, idx) => (
-                              <a
-                                key={idx}
-                                href={getBillUrl(bill)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block p-2 bg-amber-50 rounded hover:bg-amber-100 transition-colors text-xs sm:text-sm border border-amber-200"
-                              >
-                                <span className="font-medium text-amber-800">{bill.type || "Bill"}.{bill.number || "?"}</span>
-                                {bill.title && (
-                                  <span className="text-gray-600 ml-1">— {bill.title.slice(0, 50)}...</span>
-                                )}
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {legislation.recent_sponsored.length > 0 && (
-                        <div>
-                          <div className="text-xs text-gray-500 mb-2">Recent Sponsored Bills</div>
-                          <div className="space-y-2">
-                            {legislation.recent_sponsored.slice(0, 3).map((bill, idx) => (
-                              <a
-                                key={idx}
-                                href={getBillUrl(bill)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors text-sm"
-                              >
-                                <span className="font-medium">{bill.type || "Bill"}.{bill.number || "?"}</span>
-                                {bill.title && (
-                                  <span className="text-gray-600 ml-1">— {bill.title.slice(0, 60)}...</span>
-                                )}
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    <div className="bg-blue-50 rounded-lg p-2 sm:p-3 text-center">
+                      <div className="text-xl sm:text-2xl font-bold text-blue-700">{legislator.sponsored_count || 0}</div>
+                      <div className="text-xs text-blue-600">Sponsored</div>
                     </div>
-                  ) : (
-                    <div className="text-gray-500 text-sm">Unable to load legislation data</div>
-                  )}
+                    <div className="bg-green-50 rounded-lg p-2 sm:p-3 text-center">
+                      <div className="text-xl sm:text-2xl font-bold text-green-700">{legislator.cosponsored_count || 0}</div>
+                      <div className="text-xs text-green-600">Cosponsored</div>
+                    </div>
+                    <div className="bg-amber-50 rounded-lg p-2 sm:p-3 text-center">
+                      <div className="text-xl sm:text-2xl font-bold text-amber-700">{legislator.enacted_count || 0}</div>
+                      <div className="text-xs text-amber-600">Signed into Law</div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* News Mentions */}
