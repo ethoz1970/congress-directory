@@ -356,15 +356,15 @@ export default function ProfilePage() {
                     <div className={`rounded-lg py-2 px-1 ${
                       legislator.ideology_score === undefined 
                         ? "bg-black/40"
-                        : legislator.ideology_score < -0.3 
+                        : legislator.ideology_score < 0.35 
                           ? "bg-blue-600/80" 
-                          : legislator.ideology_score > 0.3 
+                          : legislator.ideology_score > 0.65 
                             ? "bg-red-600/80" 
                             : "bg-purple-600/80"
                     }`}>
                       <div className="text-lg font-bold">
                         {legislator.ideology_score !== undefined 
-                          ? (legislator.ideology_score > 0 ? "+" : "") + legislator.ideology_score.toFixed(1)
+                          ? legislator.ideology_score.toFixed(2)
                           : "—"
                         }
                       </div>

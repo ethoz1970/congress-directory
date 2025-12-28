@@ -349,7 +349,7 @@ function HomeContent() {
   }, [legislators]);
 
   const filteredLegislators = useMemo(() => {
-    const filtered = legislators.filter((legislator) => {
+    let filtered = legislators.filter((legislator) => {
       const chamberMatch = filters.chamber.length === 0 || filters.chamber.includes(legislator.chamber);
       const stateMatch = filters.state.length === 0 || filters.state.includes(legislator.state);
       const partyMatch = filters.party.length === 0 || filters.party.includes(legislator.party);
@@ -359,6 +359,11 @@ function HomeContent() {
       const favoritesMatch = !showFavoritesOnly || isFavorite(legislator.bioguide_id);
       return chamberMatch && stateMatch && partyMatch && genderMatch && yearsMatch && billsMatch && favoritesMatch;
     });
+
+    // When sorting by ideology, exclude members without ideology scores
+    if (sortBy === "ideology") {
+      filtered = filtered.filter(l => l.ideology_score != null);
+    }
 
     // Sort the filtered results
     const sorted = [...filtered].sort((a, b) => {
@@ -388,13 +393,8 @@ function HomeContent() {
           comparison = (b.sponsored_count || 0) - (a.sponsored_count || 0);
           break;
         case "ideology":
-          // Members without scores always at bottom
-          const hasIdeoA = a.ideology_score !== undefined && a.ideology_score !== null;
-          const hasIdeoB = b.ideology_score !== undefined && b.ideology_score !== null;
-          if (!hasIdeoA && !hasIdeoB) comparison = 0;
-          else if (!hasIdeoA) comparison = 1; // a goes to bottom
-          else if (!hasIdeoB) comparison = -1; // b goes to bottom
-          else comparison = a.ideology_score! - b.ideology_score!;
+          // All members here have ideology scores (filtered above)
+          comparison = a.ideology_score! - b.ideology_score!;
           break;
         case "state":
           comparison = a.state.localeCompare(b.state);
@@ -1325,16 +1325,16 @@ function HomeContent() {
                     {/* Ideology indicator in bottom left */}
                     {legislator.ideology_score != null && gridSize <= 2 && (
                       <div className={`absolute bottom-2 left-2 rounded px-1.5 py-0.5 pointer-events-none ${
-                        legislator.ideology_score < -0.3 
+                        legislator.ideology_score < 0.35 
                           ? "bg-blue-600" 
-                          : legislator.ideology_score > 0.3 
+                          : legislator.ideology_score > 0.65 
                             ? "bg-red-600" 
                             : "bg-purple-600"
                       }`}>
                         <span className={`font-bold text-white ${
                           gridSize === 1 ? "text-xs" : "text-[10px]"
                         }`}>
-                          {legislator.ideology_score > 0 ? "+" : ""}{legislator.ideology_score.toFixed(1)}
+                          {legislator.ideology_score.toFixed(2)}
                         </span>
                       </div>
                     )}

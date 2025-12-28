@@ -467,44 +467,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                   )}
                 </div>
 
-                {/* Ideology Score */}
-                {legislator.ideology_score !== undefined && legislator.ideology_score !== null && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    {/* Ideology spectrum bar */}
-                    <div className="relative h-3 rounded-full bg-gradient-to-r from-blue-600 via-purple-400 to-red-600 mb-2">
-                      {/* Marker for this legislator */}
-                      <div 
-                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-gray-800 rounded-full shadow-lg"
-                        style={{ 
-                          left: `${Math.min(Math.max((legislator.ideology_score + 1) / 2 * 100, 2), 98)}%`,
-                          transform: 'translate(-50%, -50%)'
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-500 mb-2">
-                      <span>← Progressive</span>
-                      <span>Conservative →</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-6">
-                      <div className="text-center">
-                        <span className="text-lg font-bold text-gray-900">
-                          {legislator.ideology_score > 0 ? '+' : ''}{legislator.ideology_score.toFixed(2)}
-                        </span>
-                        <span className="text-xs text-gray-500 ml-1">ideology</span>
-                      </div>
-                      {legislator.leadership_score !== undefined && (
-                        <div className="text-center border-l border-gray-300 pl-6">
-                          <span className="text-lg font-bold text-gray-900">
-                            {legislator.leadership_score.toFixed(2)}
-                          </span>
-                          <span className="text-xs text-gray-500 ml-1">leadership</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Quick Info */}
+                {/* Quick Info (State/District first) */}
                 <div className="grid grid-cols-2 gap-2 sm:gap-4">
                   <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
                     <div className="text-xs text-gray-500 uppercase">State</div>
@@ -547,6 +510,43 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                     </div>
                   )}
                 </div>
+
+                {/* Ideology Score */}
+                {legislator.ideology_score !== undefined && legislator.ideology_score !== null && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    {/* Ideology spectrum bar */}
+                    <div className="relative h-3 rounded-full bg-gradient-to-r from-blue-600 via-purple-400 to-red-600 mb-2">
+                      {/* Marker for this legislator */}
+                      <div 
+                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-gray-800 rounded-full shadow-lg"
+                        style={{ 
+                          left: `${Math.min(Math.max(legislator.ideology_score * 100, 2), 98)}%`,
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-2">
+                      <span>← Progressive</span>
+                      <span>Conservative →</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-6">
+                      <div className="text-center">
+                        <span className="text-lg font-bold text-gray-900">
+                          {legislator.ideology_score.toFixed(2)}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-1">ideology</span>
+                      </div>
+                      {legislator.leadership_score !== undefined && (
+                        <div className="text-center border-l border-gray-300 pl-6">
+                          <span className="text-lg font-bold text-gray-900">
+                            {legislator.leadership_score.toFixed(2)}
+                          </span>
+                          <span className="text-xs text-gray-500 ml-1">leadership</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Legislative Activity */}
                 <div>
