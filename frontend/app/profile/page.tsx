@@ -8,6 +8,8 @@ import { collection, getDocs, query, where, doc, getDoc } from "firebase/firesto
 import { useFavorites } from "../../lib/useFavorites";
 import SlideOutPanel from "../components/SlideOutPanel";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://congress-api-370988201370.us-central1.run.app";
+
 interface Legislator {
   bioguide_id: string;
   full_name: string;
@@ -20,6 +22,37 @@ interface Legislator {
   birthday?: string;
   ideology_score?: number;
   news_mentions?: number;
+  news_sample_headlines?: Array<{
+    title: string;
+    source: string;
+    date: string;
+    url: string;
+  }>;
+  external_ids?: {
+    youtube?: string;
+    youtube_id?: string;
+  };
+}
+
+interface YouTubeVideo {
+  video_id: string;
+  title: string;
+  description: string;
+  thumbnail_url: string;
+  published_at: string;
+  legislator_name: string;
+  legislator_id: string;
+  party: string;
+}
+
+interface NewsItem {
+  title: string;
+  source: string;
+  date: string;
+  url: string;
+  legislator_name: string;
+  legislator_id: string;
+  party: string;
 }
 
 interface UserProfile {
@@ -109,6 +142,9 @@ export default function ProfilePage() {
   const [favoriteLegislators, setFavoriteLegislators] = useState<Legislator[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLegislator, setSelectedLegislator] = useState<string | null>(null);
+  const [recentVideos, setRecentVideos] = useState<YouTubeVideo[]>([]);
+  const [recentNews, setRecentNews] = useState<NewsItem[]>([]);
+  const [updatesLoading, setUpdatesLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
@@ -153,6 +189,8 @@ export default function ProfilePage() {
             birthday: data.birthday,
             ideology_score: data.ideology_score,
             news_mentions: data.news_mentions,
+            news_sample_headlines: data.news_sample_headlines,
+            external_ids: data.external_ids,
           };
         });
         
@@ -168,8 +206,60 @@ export default function ProfilePage() {
         favLegislators.sort((a, b) => a.full_name.localeCompare(b.full_name));
         setFavoriteLegislators(favLegislators);
         
+        // Collect news from favorites
+        const allNews: NewsItem[] = [];
+        favLegislators.forEach((leg) => {
+          if (leg.news_sample_headlines) {
+            leg.news_sample_headlines.forEach((headline) => {
+              allNews.push({
+                ...headline,
+                legislator_name: leg.full_name,
+                legislator_id: leg.bioguide_id,
+                party: leg.party,
+              });
+            });
+          }
+        });
+        // Sort by date (newest first)
+        allNews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setRecentNews(allNews.slice(0, 20));
+        
+        // Fetch YouTube videos for favorites with channels
+        const legislatorsWithYouTube = favLegislators.filter(
+          (leg) => leg.external_ids?.youtube || leg.external_ids?.youtube_id
+        );
+        
+        if (legislatorsWithYouTube.length > 0) {
+          setUpdatesLoading(true);
+          const videoPromises = legislatorsWithYouTube.slice(0, 10).map(async (leg) => {
+            try {
+              const res = await fetch(`${API_URL}/api/legislators/${leg.bioguide_id}/youtube-videos`);
+              if (!res.ok) return [];
+              const data = await res.json();
+              return (data.videos || []).slice(0, 3).map((video: any) => ({
+                ...video,
+                legislator_name: leg.full_name,
+                legislator_id: leg.bioguide_id,
+                party: leg.party,
+              }));
+            } catch {
+              return [];
+            }
+          });
+          
+          const videosArrays = await Promise.all(videoPromises);
+          const allVideos = videosArrays.flat();
+          // Sort by published date (newest first)
+          allVideos.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+          setRecentVideos(allVideos.slice(0, 12));
+          setUpdatesLoading(false);
+        } else {
+          setUpdatesLoading(false);
+        }
+        
       } catch (err) {
         console.error("Error fetching profile data:", err);
+        setUpdatesLoading(false);
       } finally {
         setLoading(false);
       }
@@ -188,6 +278,25 @@ export default function ProfilePage() {
 
   if (!user) {
     return null;
+  }
+
+  function formatTimeAgo(dateStr: string): string {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffHours === 0) return "Just now";
+      return `${diffHours}h ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    } else if (diffDays < 30) {
+      return `${Math.floor(diffDays / 7)}w ago`;
+    } else {
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
   }
 
   return (
@@ -256,6 +365,134 @@ export default function ProfilePage() {
             <p className="text-gray-600">Democrats</p>
           </div>
         </div>
+
+        {/* YouTube Videos Section */}
+        {favorites.size > 0 && (
+          <div className="bg-white rounded-lg shadow mb-8">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Latest Videos</h3>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              {updatesLoading ? (
+                <div className="text-center py-8 text-gray-500">Loading videos...</div>
+              ) : recentVideos.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No recent videos from your favorites
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {recentVideos.map((video) => (
+                    <a
+                      key={video.video_id}
+                      href={`https://www.youtube.com/watch?v=${video.video_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group block rounded-lg overflow-hidden bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="relative aspect-video">
+                        <img
+                          src={video.thumbnail_url}
+                          alt={video.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                          <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
+                            <svg className="w-5 h-5 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                          {video.title}
+                        </h4>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span 
+                            className="cursor-pointer hover:text-blue-600"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setSelectedLegislator(video.legislator_id);
+                            }}
+                          >
+                            <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
+                              video.party === "Republican" ? "bg-red-500" : 
+                              video.party === "Democrat" ? "bg-blue-500" : "bg-purple-500"
+                            }`} />
+                            {video.legislator_name}
+                          </span>
+                          <span>{formatTimeAgo(video.published_at)}</span>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* News Headlines Section */}
+        {favorites.size > 0 && recentNews.length > 0 && (
+          <div className="bg-white rounded-lg shadow mb-8">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">News Headlines</h3>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="space-y-3">
+                {recentNews.map((news, idx) => (
+                  <a
+                    key={idx}
+                    href={news.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <h4 className="text-sm font-medium text-gray-900 mb-2 line-clamp-2">
+                      {news.title}
+                    </h4>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center gap-3">
+                        <span 
+                          className="cursor-pointer hover:text-blue-600"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setSelectedLegislator(news.legislator_id);
+                          }}
+                        >
+                          <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
+                            news.party === "Republican" ? "bg-red-500" : 
+                            news.party === "Democrat" ? "bg-blue-500" : "bg-purple-500"
+                          }`} />
+                          {news.legislator_name}
+                        </span>
+                        <span className="text-gray-400">•</span>
+                        <span>{news.source}</span>
+                      </div>
+                      <span>{formatTimeAgo(news.date)}</span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Favorites Grid - Trading Cards */}
         <div className="mb-4">
