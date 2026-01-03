@@ -728,7 +728,7 @@ async def get_youtube_videos(bioguide_id: str, refresh: bool = False):
 async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
     """
     Find representatives and senators by zip code using whoismyrepresentative.com API.
-    Returns matched bioguide_ids from our database.
+    Always returns both senators for the state plus the house representative.
     """
     try:
         async with httpx.AsyncClient() as client:
@@ -757,11 +757,24 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
                     "message": "No representatives found for this zip code"
                 }
             
-            # Match with our legislators by name
+            # Get the state from the first result
+            state = results[0].get("state", "") if results else ""
+            
+            if not state:
+                return {
+                    "zip": zip,
+                    "representatives": [],
+                    "raw_results": results,
+                    "message": "Could not determine state from zip code"
+                }
+            
             matched = []
+            matched_bioguides = set()
+            
+            # First, match representatives from the API response
             for rep in results:
                 name = rep.get("name", "")
-                state = rep.get("state", "")
+                rep_state = rep.get("state", "")
                 
                 # Clean the name - remove "Rep. " or "Sen. " prefix
                 clean_name = name.replace("Rep. ", "").replace("Sen. ", "").strip()
@@ -774,17 +787,18 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
                     last_name = name_parts[-2] if len(name_parts) > 1 else ""
                 
                 # Query legislators by state
-                query = db.collection("legislators").where("state", "==", state).stream()
+                query = db.collection("legislators").where("state", "==", rep_state).stream()
                 
                 for doc in query:
                     leg = doc.to_dict()
                     leg_last_name = leg.get("last_name", "").lower()
                     leg_full_name = leg.get("full_name", "").lower()
+                    bioguide = leg.get("bioguide_id")
                     
                     # Check if last names match
-                    if last_name.lower() == leg_last_name or last_name.lower() in leg_full_name:
+                    if (last_name.lower() == leg_last_name or last_name.lower() in leg_full_name) and bioguide not in matched_bioguides:
                         matched.append({
-                            "bioguide_id": leg.get("bioguide_id"),
+                            "bioguide_id": bioguide,
                             "full_name": leg.get("full_name"),
                             "party": leg.get("party"),
                             "state": leg.get("state"),
@@ -792,10 +806,34 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
                             "district": leg.get("district"),
                             "api_name": name,
                         })
+                        matched_bioguides.add(bioguide)
                         break
+            
+            # Now ensure we have both senators for the state
+            senators_query = db.collection("legislators").where("state", "==", state).where("chamber", "==", "Senate").stream()
+            
+            for doc in senators_query:
+                leg = doc.to_dict()
+                bioguide = leg.get("bioguide_id")
+                
+                if bioguide not in matched_bioguides:
+                    matched.append({
+                        "bioguide_id": bioguide,
+                        "full_name": leg.get("full_name"),
+                        "party": leg.get("party"),
+                        "state": leg.get("state"),
+                        "chamber": leg.get("chamber"),
+                        "district": leg.get("district"),
+                        "api_name": None,  # Not from API, added from database
+                    })
+                    matched_bioguides.add(bioguide)
+            
+            # Sort: Senators first, then Representatives
+            matched.sort(key=lambda x: (0 if x["chamber"] == "Senate" else 1, x["full_name"]))
             
             return {
                 "zip": zip,
+                "state": state,
                 "representatives": matched,
                 "raw_results": results
             }
