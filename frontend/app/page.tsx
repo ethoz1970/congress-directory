@@ -38,6 +38,7 @@ interface Legislator {
   ideology_score?: number;
   leadership_score?: number;
   news_mentions?: number;
+  photo_url?: string;
 }
 
 interface Filters {
@@ -79,6 +80,7 @@ const PARTY_COLORS: Record<string, string> = {
 const CHAMBER_COLORS: Record<string, string> = {
   Senate: "bg-amber-100 text-amber-800",
   House: "bg-emerald-100 text-emerald-800",
+  Governor: "bg-violet-100 text-violet-800",
 };
 
 const YEARS_IN_CONGRESS_OPTIONS = [
@@ -318,7 +320,7 @@ function HomeContent() {
     return () => clearInterval(timer);
   }, [heroVisible, heroPaused, heroSlides.length]);
 
-  // Initialize filters from URL on mount
+  // Initialize filters and sort from URL on mount
   useEffect(() => {
     const chamber = searchParams.get("chamber")?.split(",").filter(Boolean) || [];
     const state = searchParams.get("state")?.split(",").filter(Boolean) || [];
@@ -326,9 +328,15 @@ function HomeContent() {
     const gender = searchParams.get("gender")?.split(",").filter(Boolean) || [];
     const yearsInCongress = searchParams.get("years")?.split(",").filter(Boolean) || [];
     const billsEnacted = searchParams.get("enacted")?.split(",").filter(Boolean) || [];
-    
+
     setFilters({ chamber, state, party, gender, yearsInCongress, billsEnacted, newsMentions: searchParams.get("news")?.split(",").filter(Boolean) || [] });
-    
+
+    // Initialize sort from URL
+    const sort = searchParams.get("sort");
+    const dir = searchParams.get("dir") as "asc" | "desc" | null;
+    if (sort) setSortBy(sort);
+    if (dir) setSortDirection(dir);
+
     // Check for member param to auto-open slide-out panel
     const member = searchParams.get("member");
     if (member) {
@@ -336,8 +344,8 @@ function HomeContent() {
     }
   }, [searchParams]);
 
-  // Update URL when filters change
-  const updateURL = (newFilters: Filters) => {
+  // Update URL when filters or sort change
+  const updateURL = (newFilters: Filters, sort?: string, dir?: "asc" | "desc") => {
     const params = new URLSearchParams();
     if (newFilters.chamber.length > 0) params.set("chamber", newFilters.chamber.join(","));
     if (newFilters.state.length > 0) params.set("state", newFilters.state.join(","));
@@ -346,7 +354,13 @@ function HomeContent() {
     if (newFilters.yearsInCongress.length > 0) params.set("years", newFilters.yearsInCongress.join(","));
     if (newFilters.billsEnacted.length > 0) params.set("enacted", newFilters.billsEnacted.join(","));
     if (newFilters.newsMentions.length > 0) params.set("news", newFilters.newsMentions.join(","));
-    
+
+    // Add sort params (only if not default)
+    const currentSort = sort ?? sortBy;
+    const currentDir = dir ?? sortDirection;
+    if (currentSort !== "news") params.set("sort", currentSort);
+    if (currentDir !== "asc") params.set("dir", currentDir);
+
     const queryString = params.toString();
     router.push(queryString ? `?${queryString}` : "/", { scroll: false });
   };
@@ -566,7 +580,9 @@ function HomeContent() {
   };
 
   const getSubtitle = (legislator: Legislator) => {
-    if (legislator.chamber === "Senate") {
+    if (legislator.chamber === "Governor") {
+      return `Governor of ${STATE_NAMES[legislator.state] || legislator.state}`;
+    } else if (legislator.chamber === "Senate") {
       return `${STATE_NAMES[legislator.state] || legislator.state} • ${legislator.state_rank || ""} Senator`;
     } else {
       const district = legislator.district === 0 ? "At-Large" : `District ${legislator.district}`;
@@ -593,7 +609,7 @@ function HomeContent() {
     
     // Chamber
     if (filters.chamber.length === 1) {
-      parts.push(filters.chamber[0] === "Senate" ? "Senators" : "Representatives");
+      parts.push(filters.chamber[0] === "Senate" ? "Senators" : filters.chamber[0] === "Governor" ? "Governors" : "Representatives");
     } else {
       parts.push("Members");
     }
@@ -686,12 +702,16 @@ function HomeContent() {
                   <button
                     key={option.key}
                     onClick={() => {
+                      let newSort = option.key;
+                      let newDir: "asc" | "desc" = "asc";
                       if (sortBy === option.key) {
-                        setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+                        newDir = sortDirection === "asc" ? "desc" : "asc";
+                        setSortDirection(newDir);
                       } else {
-                        setSortBy(option.key);
-                        setSortDirection("asc");
+                        setSortBy(newSort);
+                        setSortDirection(newDir);
                       }
+                      updateURL(filters, newSort, newDir);
                     }}
                     className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors ${
                       sortBy === option.key
@@ -1138,9 +1158,10 @@ function HomeContent() {
                       className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors border border-gray-200"
                     >
                       <img
-                        src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                        src={legislator.photo_url || `https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
                         alt={legislator.full_name}
                         className="w-12 h-16 object-cover rounded bg-gray-200"
+                        referrerPolicy="no-referrer"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = "https://via.placeholder.com/48x64?text=?";
                         }}
@@ -1148,7 +1169,7 @@ function HomeContent() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 truncate">{legislator.full_name}</p>
                         <p className="text-sm text-gray-500">
-                          {legislator.chamber === "Senate" ? "Senator" : `Rep. - District ${legislator.district}`}
+                          {legislator.chamber === "Senate" ? "Senator" : legislator.chamber === "Governor" ? "Governor" : `Rep. - District ${legislator.district}`}
                         </p>
                         <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${
                           legislator.party === "Republican" 
@@ -1216,8 +1237,8 @@ function HomeContent() {
                         ? legislators.filter(l => l.chamber === filters.chamber[0]).length 
                         : legislators.length
                     } {
-                      filters.chamber.length === 1 
-                        ? (filters.chamber[0] === "Senate" ? "senators" : "representatives")
+                      filters.chamber.length === 1
+                        ? (filters.chamber[0] === "Senate" ? "senators" : filters.chamber[0] === "Governor" ? "governors" : "representatives")
                         : "members"
                     }
                     {hasActiveFilters && filters.chamber.length !== 1 && (
@@ -1233,7 +1254,7 @@ function HomeContent() {
                     <div className="text-sm text-gray-500 mt-0.5">
                       {[
                         filters.party.length > 0 && filters.party.join(" & "),
-                        filters.chamber.length > 0 && filters.chamber.map(c => c === "Senate" ? "Senators" : "Representatives").join(" & "),
+                        filters.chamber.length > 0 && filters.chamber.map(c => c === "Senate" ? "Senators" : c === "Governor" ? "Governors" : "Representatives").join(" & "),
                         filters.gender.length > 0 && filters.gender.map(g => g === "M" ? "Male" : g === "F" ? "Female" : g).join(" & "),
                         filters.state.length > 0 && (filters.state.length <= 2 ? filters.state.map(s => STATE_NAMES[s] || s).join(" & ") : `${filters.state.length} states`),
                         filters.yearsInCongress.length > 0 && YEARS_IN_CONGRESS_OPTIONS.filter(o => filters.yearsInCongress.includes(o.key)).map(o => o.label).join(" or "),
@@ -1322,9 +1343,10 @@ function HomeContent() {
                     >
                       <div className="flex-shrink-0">
                         <img
-                          src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                          src={legislator.photo_url || `https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
                           alt={legislator.full_name}
                           className="w-20 h-24 object-cover rounded bg-gray-200"
+                          referrerPolicy="no-referrer"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = "https://via.placeholder.com/80x96?text=No+Photo";
                           }}
@@ -1374,9 +1396,10 @@ function HomeContent() {
                   >
                     {/* Full image background */}
                     <img
-                      src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                      src={legislator.photo_url || `https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
                       alt={legislator.full_name}
                       className="absolute inset-0 w-full h-full object-cover bg-gray-200 pointer-events-none"
+                      referrerPolicy="no-referrer"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x400?text=No+Photo";
                       }}
@@ -1461,7 +1484,7 @@ function HomeContent() {
                       gridSize === 4 ? "top-0 right-0.5 text-[6px] sm:top-0.5 sm:right-1 sm:text-xs" :
                       "top-0 right-0 text-[5px] sm:top-0 sm:right-0.5 sm:text-[8px]"
                     }`}>
-                      {legislator.chamber === "Senate" ? "S" : "R"}
+                      {legislator.chamber === "Senate" ? "S" : legislator.chamber === "Governor" ? "G" : "R"}
                     </span>
                     
                     {/* Bills enacted triangle in lower right with count */}

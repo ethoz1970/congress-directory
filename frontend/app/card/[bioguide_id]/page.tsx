@@ -17,6 +17,7 @@ interface Legislator {
   birthday?: string;
   ideology_score?: number;
   news_mentions?: number;
+  photo_url?: string;
 }
 
 const STATE_NAMES: Record<string, string> = {
@@ -111,15 +112,15 @@ export default function MemberCardPage() {
       {/* Dynamic meta tags for social sharing */}
       <head>
         <title>{legislator.full_name} | Congress Directory</title>
-        <meta name="description" content={`${legislator.full_name} - ${legislator.party} ${legislator.chamber === "Senate" ? "Senator" : "Representative"} from ${STATE_NAMES[legislator.state]}`} />
+        <meta name="description" content={`${legislator.full_name} - ${legislator.party} ${legislator.chamber === "Senate" ? "Senator" : legislator.chamber === "Governor" ? "Governor" : "Representative"} from ${STATE_NAMES[legislator.state]}`} />
         <meta property="og:title" content={`${legislator.full_name} | Congress Directory`} />
-        <meta property="og:description" content={`${legislator.party} ${legislator.chamber === "Senate" ? "Senator" : "Representative"} from ${STATE_NAMES[legislator.state]}`} />
-        <meta property="og:image" content={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`} />
+        <meta property="og:description" content={`${legislator.party} ${legislator.chamber === "Senate" ? "Senator" : legislator.chamber === "Governor" ? "Governor" : "Representative"} from ${STATE_NAMES[legislator.state]}`} />
+        <meta property="og:image" content={legislator.photo_url || `https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`} />
         <meta property="og:type" content="profile" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${legislator.full_name} | Congress Directory`} />
-        <meta name="twitter:description" content={`${legislator.party} ${legislator.chamber === "Senate" ? "Senator" : "Representative"} from ${STATE_NAMES[legislator.state]}`} />
-        <meta name="twitter:image" content={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`} />
+        <meta name="twitter:description" content={`${legislator.party} ${legislator.chamber === "Senate" ? "Senator" : legislator.chamber === "Governor" ? "Governor" : "Representative"} from ${STATE_NAMES[legislator.state]}`} />
+        <meta name="twitter:image" content={legislator.photo_url || `https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`} />
       </head>
 
       <main className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
@@ -127,9 +128,10 @@ export default function MemberCardPage() {
         <div className="relative rounded-xl shadow-2xl overflow-hidden w-full max-w-sm aspect-[3/4]">
           {/* Full background image */}
           <img
-            src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+            src={legislator.photo_url || `https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
             alt={legislator.full_name}
             className="absolute inset-0 w-full h-full object-cover"
+            referrerPolicy="no-referrer"
             onError={(e) => {
               (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x400?text=No+Photo";
             }}
@@ -146,9 +148,9 @@ export default function MemberCardPage() {
           
           {/* Chamber badge */}
           <div className={`absolute top-4 right-4 px-3 py-1.5 rounded text-sm font-bold text-white ${
-            legislator.chamber === "Senate" ? "bg-amber-600" : "bg-emerald-600"
+            legislator.chamber === "Senate" ? "bg-amber-600" : legislator.chamber === "Governor" ? "bg-violet-600" : "bg-emerald-600"
           }`}>
-            {legislator.chamber === "Senate" ? "SENATOR" : "REPRESENTATIVE"}
+            {legislator.chamber === "Senate" ? "SENATOR" : legislator.chamber === "Governor" ? "GOVERNOR" : "REPRESENTATIVE"}
           </div>
           
           {/* Party badge */}
@@ -170,8 +172,10 @@ export default function MemberCardPage() {
             {/* Name and location */}
             <h1 className="text-2xl font-bold leading-tight mb-1">{legislator.full_name}</h1>
             <p className="text-base text-gray-300 mb-4">
-              {STATE_NAMES[legislator.state] || legislator.state}
-              {legislator.chamber === "House" && legislator.district !== undefined && 
+              {legislator.chamber === "Governor"
+                ? `Governor of ${STATE_NAMES[legislator.state] || legislator.state}`
+                : STATE_NAMES[legislator.state] || legislator.state}
+              {legislator.chamber === "House" && legislator.district !== undefined &&
                 ` • District ${legislator.district === 0 ? "At-Large" : legislator.district}`
               }
             </p>

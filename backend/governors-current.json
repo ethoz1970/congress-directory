@@ -1,0 +1,1695 @@
+[
+  {
+    "id": {
+      "govtrack": "GOV-AL"
+    },
+    "name": {
+      "first": "Kay",
+      "last": "Ivey",
+      "official_full": "Kay Ivey"
+    },
+    "bio": {
+      "birthday": "1944-10-15",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-16",
+        "end": "2027-01-18",
+        "state": "AL",
+        "party": "Republican",
+        "phone": "334-242-7100",
+        "office": "Alabama State Capitol, 600 Dexter Avenue, Montgomery, AL 36130",
+        "url": "https://governor.alabama.gov",
+        "contact_form": "https://governor.alabama.gov/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Kay_Ivey",
+      "ballotpedia": "Kay_Ivey",
+      "twitter": "GovernorKayIvey",
+      "facebook": "GovernorKayIvey"
+    },
+    "photo_url": "/governors/AL.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-AK"
+    },
+    "name": {
+      "first": "Mike",
+      "last": "Dunleavy",
+      "official_full": "Mike Dunleavy"
+    },
+    "bio": {
+      "birthday": "1961-05-07",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2022-12-05",
+        "end": "2026-12-07",
+        "state": "AK",
+        "party": "Republican",
+        "phone": "907-465-3500",
+        "office": "Alaska State Capitol, 3rd Floor, Juneau, AK 99801",
+        "url": "https://gov.alaska.gov",
+        "contact_form": "https://gov.alaska.gov/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Mike_Dunleavy",
+      "ballotpedia": "Mike_Dunleavy",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/AK.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-AZ"
+    },
+    "name": {
+      "first": "Katie",
+      "last": "Hobbs",
+      "official_full": "Katie Hobbs"
+    },
+    "bio": {
+      "birthday": "1969-01-23",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-02",
+        "end": "2027-01-04",
+        "state": "AZ",
+        "party": "Democrat",
+        "phone": "602-542-4331",
+        "office": "1700 West Washington Street, Phoenix, AZ 85007",
+        "url": "https://azgovernor.gov",
+        "contact_form": "https://azgovernor.gov/contact-us"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Katie_Hobbs",
+      "ballotpedia": "Katie_Hobbs",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/AZ.jpeg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-AR"
+    },
+    "name": {
+      "first": "Sarah",
+      "middle": "Huckabee",
+      "last": "Sanders",
+      "official_full": "Sarah Huckabee Sanders"
+    },
+    "bio": {
+      "birthday": "1982-08-13",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-10",
+        "end": "2027-01-12",
+        "state": "AR",
+        "party": "Republican",
+        "phone": "501-682-2345",
+        "office": "State Capitol, Room 250, Little Rock, AR 72201",
+        "url": "https://governor.arkansas.gov",
+        "contact_form": "https://governor.arkansas.gov/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Sarah_Huckabee_Sanders",
+      "ballotpedia": "Sarah_Huckabee_Sanders",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/AR.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-CA"
+    },
+    "name": {
+      "first": "Gavin",
+      "last": "Newsom",
+      "official_full": "Gavin Newsom"
+    },
+    "bio": {
+      "birthday": "1967-10-10",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-06",
+        "end": "2027-01-04",
+        "state": "CA",
+        "party": "Democrat",
+        "phone": "916-445-2841",
+        "office": "State Capitol, Suite 1173, Sacramento, CA 95814",
+        "url": "https://www.gov.ca.gov",
+        "contact_form": "https://govapps.gov.ca.gov/gov40mail/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Gavin_Newsom",
+      "ballotpedia": "Gavin_Newsom",
+      "twitter": "GavinNewsom",
+      "facebook": "GavinNewsom"
+    },
+    "photo_url": "/governors/CA.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-CO"
+    },
+    "name": {
+      "first": "Jared",
+      "last": "Polis",
+      "official_full": "Jared Polis"
+    },
+    "bio": {
+      "birthday": "1975-05-12",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-10",
+        "end": "2027-01-12",
+        "state": "CO",
+        "party": "Democrat",
+        "phone": "303-866-2471",
+        "office": "136 State Capitol, Denver, CO 80203",
+        "url": "https://www.colorado.gov/governor",
+        "contact_form": "https://www.colorado.gov/governor/contact-us"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Jared_Polis",
+      "ballotpedia": "Jared_Polis",
+      "twitter": "GovofCO",
+      "facebook": "PolisforColorado"
+    },
+    "photo_url": "/governors/CO.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-CT"
+    },
+    "name": {
+      "first": "Ned",
+      "last": "Lamont",
+      "official_full": "Ned Lamont"
+    },
+    "bio": {
+      "birthday": "1954-01-03",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-04",
+        "end": "2027-01-06",
+        "state": "CT",
+        "party": "Democrat",
+        "phone": "860-566-4840",
+        "office": "State Capitol, 210 Capitol Avenue, Hartford, CT 06106",
+        "url": "https://portal.ct.gov/governor",
+        "contact_form": "https://portal.ct.gov/governor/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Ned_Lamont",
+      "ballotpedia": "Ned_Lamont",
+      "twitter": "GovNedLamont",
+      "facebook": "GovNedLamont"
+    },
+    "photo_url": "/governors/CT.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-DE"
+    },
+    "name": {
+      "first": "Matt",
+      "last": "Meyer",
+      "official_full": "Matt Meyer"
+    },
+    "bio": {
+      "birthday": "1975-07-25",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2025-01-21",
+        "end": "2029-01-16",
+        "state": "DE",
+        "party": "Democrat",
+        "phone": "302-744-4101",
+        "office": "Tatnall Building, 150 Martin Luther King Jr. Blvd South, Dover, DE 19901",
+        "url": "https://governor.delaware.gov",
+        "contact_form": "https://governor.delaware.gov/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Matt_Meyer_(politician)",
+      "ballotpedia": "Matt_Meyer",
+      "twitter": "MattMeyerDE"
+    },
+    "photo_url": "/governors/DE.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-FL"
+    },
+    "name": {
+      "first": "Ron",
+      "last": "DeSantis",
+      "official_full": "Ron DeSantis"
+    },
+    "bio": {
+      "birthday": "1978-09-14",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-03",
+        "end": "2027-01-05",
+        "state": "FL",
+        "party": "Republican",
+        "phone": "850-717-9337",
+        "office": "The Capitol, 400 S. Monroe St., Tallahassee, FL 32399",
+        "url": "https://www.flgov.com",
+        "contact_form": "https://www.flgov.com/contact-governor/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Ron_DeSantis",
+      "ballotpedia": "Ron_DeSantis",
+      "twitter": "GovRonDeSantis",
+      "facebook": "GovRonDeSantis"
+    },
+    "photo_url": "/governors/FL.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-GA"
+    },
+    "name": {
+      "first": "Brian",
+      "last": "Kemp",
+      "official_full": "Brian Kemp"
+    },
+    "bio": {
+      "birthday": "1963-11-02",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-12",
+        "end": "2027-01-11",
+        "state": "GA",
+        "party": "Republican",
+        "phone": "404-656-1776",
+        "office": "206 Washington Street, Suite 203, State Capitol, Atlanta, GA 30334",
+        "url": "https://gov.georgia.gov",
+        "contact_form": "https://gov.georgia.gov/contact-us"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Brian_Kemp",
+      "ballotpedia": "Brian_Kemp",
+      "twitter": "GovKemp",
+      "facebook": "GovKemp"
+    },
+    "photo_url": "/governors/GA.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-HI"
+    },
+    "name": {
+      "first": "Josh",
+      "last": "Green",
+      "official_full": "Josh Green"
+    },
+    "bio": {
+      "birthday": "1970-02-11",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2022-12-05",
+        "end": "2026-12-07",
+        "state": "HI",
+        "party": "Democrat",
+        "phone": "808-586-0034",
+        "office": "Executive Chambers, State Capitol, Honolulu, HI 96813",
+        "url": "https://governor.hawaii.gov",
+        "contact_form": "https://governor.hawaii.gov/contact-us/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Josh_Green",
+      "ballotpedia": "Josh_Green",
+      "twitter": "GovJoshGreenMD",
+      "facebook": "GovJoshGreen"
+    },
+    "photo_url": "/governors/HI.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-ID"
+    },
+    "name": {
+      "first": "Brad",
+      "last": "Little",
+      "official_full": "Brad Little"
+    },
+    "bio": {
+      "birthday": "1954-02-15",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-02",
+        "end": "2027-01-04",
+        "state": "ID",
+        "party": "Republican",
+        "phone": "208-334-2100",
+        "office": "State Capitol, 700 W Jefferson Street, Boise, ID 83702",
+        "url": "https://gov.idaho.gov",
+        "contact_form": "https://gov.idaho.gov/contact-us/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Brad_Little",
+      "ballotpedia": "Brad_Little",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/ID.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-IL"
+    },
+    "name": {
+      "first": "JB",
+      "last": "Pritzker",
+      "official_full": "JB Pritzker"
+    },
+    "bio": {
+      "birthday": "1965-01-19",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-09",
+        "end": "2027-01-11",
+        "state": "IL",
+        "party": "Democrat",
+        "phone": "217-782-0244",
+        "office": "207 State House, Springfield, IL 62706",
+        "url": "https://www.illinois.gov/government/governor",
+        "contact_form": "https://www2.illinois.gov/sites/gov/contactus/Pages/default.aspx"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "J._B._Pritzker",
+      "ballotpedia": "JB_Pritzker",
+      "twitter": "GovPritzker",
+      "facebook": "GovPritzker"
+    },
+    "photo_url": "/governors/IL.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-IN"
+    },
+    "name": {
+      "first": "Mike",
+      "last": "Braun",
+      "official_full": "Mike Braun"
+    },
+    "bio": {
+      "birthday": "1954-03-24",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2025-01-13",
+        "end": "2029-01-08",
+        "state": "IN",
+        "party": "Republican",
+        "phone": "317-232-4567",
+        "office": "State House, Room 206, Indianapolis, IN 46204",
+        "url": "https://www.in.gov/gov/",
+        "contact_form": "https://www.in.gov/gov/contact-us/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Mike_Braun",
+      "ballotpedia": "Mike_Braun",
+      "twitter": "prior: prior"
+    },
+    "photo_url": "/governors/IN.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-IA"
+    },
+    "name": {
+      "first": "Kim",
+      "last": "Reynolds",
+      "official_full": "Kim Reynolds"
+    },
+    "bio": {
+      "birthday": "1959-08-04",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-13",
+        "end": "2027-01-15",
+        "state": "IA",
+        "party": "Republican",
+        "phone": "515-281-5211",
+        "office": "State Capitol, 1007 East Grand Avenue, Des Moines, IA 50319",
+        "url": "https://governor.iowa.gov",
+        "contact_form": "https://governor.iowa.gov/contact-us"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Kim_Reynolds",
+      "ballotpedia": "Kim_Reynolds",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/IA.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-KS"
+    },
+    "name": {
+      "first": "Laura",
+      "last": "Kelly",
+      "official_full": "Laura Kelly"
+    },
+    "bio": {
+      "birthday": "1950-01-24",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-09",
+        "end": "2027-01-11",
+        "state": "KS",
+        "party": "Democrat",
+        "phone": "785-296-3232",
+        "office": "State Capitol, 300 SW 10th Avenue, Suite 241S, Topeka, KS 66612",
+        "url": "https://governor.kansas.gov",
+        "contact_form": "https://governor.kansas.gov/contact-the-governor/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Laura_Kelly",
+      "ballotpedia": "Laura_Kelly",
+      "twitter": "GovLauraKelly",
+      "facebook": "GovLauraKelly"
+    },
+    "photo_url": "/governors/KS.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-KY"
+    },
+    "name": {
+      "first": "Andy",
+      "last": "Beshear",
+      "official_full": "Andy Beshear"
+    },
+    "bio": {
+      "birthday": "1977-11-29",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-12-12",
+        "end": "2027-12-14",
+        "state": "KY",
+        "party": "Democrat",
+        "phone": "502-564-2611",
+        "office": "State Capitol, 700 Capitol Avenue, Frankfort, KY 40601",
+        "url": "https://governor.ky.gov",
+        "contact_form": "https://governor.ky.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Andy_Beshear",
+      "ballotpedia": "Andy_Beshear",
+      "twitter": "GovAndyBeshear",
+      "facebook": "GovAndyBeshear"
+    },
+    "photo_url": "/governors/KY.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-LA"
+    },
+    "name": {
+      "first": "Jeff",
+      "last": "Landry",
+      "official_full": "Jeff Landry"
+    },
+    "bio": {
+      "birthday": "1970-12-23",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2024-01-08",
+        "end": "2028-01-13",
+        "state": "LA",
+        "party": "Republican",
+        "phone": "225-342-7015",
+        "office": "State Capitol, 900 North Third Street, Baton Rouge, LA 70802",
+        "url": "https://gov.louisiana.gov",
+        "contact_form": "https://gov.louisiana.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Jeff_Landry",
+      "ballotpedia": "Jeff_Landry",
+      "twitter": "prior: prior"
+    },
+    "photo_url": "/governors/LA.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-ME"
+    },
+    "name": {
+      "first": "Janet",
+      "last": "Mills",
+      "official_full": "Janet Mills"
+    },
+    "bio": {
+      "birthday": "1947-12-30",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-04",
+        "end": "2027-01-06",
+        "state": "ME",
+        "party": "Democrat",
+        "phone": "207-287-3531",
+        "office": "1 State House Station, Augusta, ME 04333",
+        "url": "https://www.maine.gov/governor/mills/",
+        "contact_form": "https://www.maine.gov/governor/mills/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Janet_Mills",
+      "ballotpedia": "Janet_Mills",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/ME.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-MD"
+    },
+    "name": {
+      "first": "Wes",
+      "last": "Moore",
+      "official_full": "Wes Moore"
+    },
+    "bio": {
+      "birthday": "1978-10-15",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-18",
+        "end": "2027-01-20",
+        "state": "MD",
+        "party": "Democrat",
+        "phone": "410-974-3901",
+        "office": "State House, 100 State Circle, Annapolis, MD 21401",
+        "url": "https://governor.maryland.gov",
+        "contact_form": "https://governor.maryland.gov/contact-us/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Wes_Moore",
+      "ballotpedia": "Wes_Moore",
+      "twitter": "GovWesMoore",
+      "facebook": "GovWesMoore"
+    },
+    "photo_url": "/governors/MD.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-MA"
+    },
+    "name": {
+      "first": "Maura",
+      "last": "Healey",
+      "official_full": "Maura Healey"
+    },
+    "bio": {
+      "birthday": "1971-02-08",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-05",
+        "end": "2027-01-07",
+        "state": "MA",
+        "party": "Democrat",
+        "phone": "617-725-4005",
+        "office": "State House, Room 280, Boston, MA 02133",
+        "url": "https://www.mass.gov/orgs/office-of-the-governor",
+        "contact_form": "https://www.mass.gov/forms/email-the-governors-office"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Maura_Healey",
+      "ballotpedia": "Maura_Healey",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/MA.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-MI"
+    },
+    "name": {
+      "first": "Gretchen",
+      "last": "Whitmer",
+      "official_full": "Gretchen Whitmer"
+    },
+    "bio": {
+      "birthday": "1971-08-23",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-01",
+        "end": "2027-01-03",
+        "state": "MI",
+        "party": "Democrat",
+        "phone": "517-373-3400",
+        "office": "P.O. Box 30013, Lansing, MI 48909",
+        "url": "https://www.michigan.gov/whitmer",
+        "contact_form": "https://www.michigan.gov/whitmer/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Gretchen_Whitmer",
+      "ballotpedia": "Gretchen_Whitmer",
+      "twitter": "GovWhitmer",
+      "facebook": "graborwhitmer"
+    },
+    "photo_url": "/governors/MI.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-MN"
+    },
+    "name": {
+      "first": "Tim",
+      "last": "Walz",
+      "official_full": "Tim Walz"
+    },
+    "bio": {
+      "birthday": "1964-04-06",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-02",
+        "end": "2027-01-04",
+        "state": "MN",
+        "party": "Democrat",
+        "phone": "651-201-3400",
+        "office": "130 State Capitol, 75 Rev Dr Martin Luther King Jr Blvd, Saint Paul, MN 55155",
+        "url": "https://mn.gov/governor/",
+        "contact_form": "https://mn.gov/governor/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Tim_Walz",
+      "ballotpedia": "Tim_Walz",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/MN.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-MS"
+    },
+    "name": {
+      "first": "Tate",
+      "last": "Reeves",
+      "official_full": "Tate Reeves"
+    },
+    "bio": {
+      "birthday": "1974-06-05",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2024-01-09",
+        "end": "2028-01-14",
+        "state": "MS",
+        "party": "Republican",
+        "phone": "601-359-3150",
+        "office": "P.O. Box 139, Jackson, MS 39205",
+        "url": "https://governorreeves.ms.gov",
+        "contact_form": "https://governorreeves.ms.gov/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Tate_Reeves",
+      "ballotpedia": "Tate_Reeves",
+      "twitter": "tatereeves",
+      "facebook": "TateReeves"
+    },
+    "photo_url": "/governors/MS.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-MO"
+    },
+    "name": {
+      "first": "Mike",
+      "last": "Kehoe",
+      "official_full": "Mike Kehoe"
+    },
+    "bio": {
+      "birthday": "1962-10-14",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2025-01-13",
+        "end": "2029-01-08",
+        "state": "MO",
+        "party": "Republican",
+        "phone": "573-751-3222",
+        "office": "Capitol Building, Room 216, Jefferson City, MO 65101",
+        "url": "https://governor.mo.gov",
+        "contact_form": "https://governor.mo.gov/contact-us"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Mike_Kehoe",
+      "ballotpedia": "Mike_Kehoe",
+      "twitter": "prior: prior"
+    },
+    "photo_url": "/governors/MO.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-MT"
+    },
+    "name": {
+      "first": "Greg",
+      "last": "Gianforte",
+      "official_full": "Greg Gianforte"
+    },
+    "bio": {
+      "birthday": "1961-04-17",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2025-01-06",
+        "end": "2029-01-01",
+        "state": "MT",
+        "party": "Republican",
+        "phone": "406-444-3111",
+        "office": "P.O. Box 200801, Helena, MT 59620",
+        "url": "https://governor.mt.gov",
+        "contact_form": "https://governor.mt.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Greg_Gianforte",
+      "ballotpedia": "Greg_Gianforte",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/MT.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-NE"
+    },
+    "name": {
+      "first": "Jim",
+      "last": "Pillen",
+      "official_full": "Jim Pillen"
+    },
+    "bio": {
+      "birthday": "1955-12-31",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-05",
+        "end": "2027-01-07",
+        "state": "NE",
+        "party": "Republican",
+        "phone": "402-471-2244",
+        "office": "State Capitol, Room 2316, Lincoln, NE 68509",
+        "url": "https://governor.nebraska.gov",
+        "contact_form": "https://governor.nebraska.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Jim_Pillen",
+      "ballotpedia": "Jim_Pillen",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/NE.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-NV"
+    },
+    "name": {
+      "first": "Joe",
+      "last": "Lombardo",
+      "official_full": "Joe Lombardo"
+    },
+    "bio": {
+      "birthday": "1961-09-09",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-02",
+        "end": "2027-01-04",
+        "state": "NV",
+        "party": "Republican",
+        "phone": "775-684-5670",
+        "office": "State Capitol, 101 N. Carson Street, Carson City, NV 89701",
+        "url": "https://gov.nv.gov",
+        "contact_form": "https://gov.nv.gov/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Joe_Lombardo_(politician)",
+      "ballotpedia": "Joe_Lombardo",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/NV.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-NH"
+    },
+    "name": {
+      "first": "Kelly",
+      "last": "Ayotte",
+      "official_full": "Kelly Ayotte"
+    },
+    "bio": {
+      "birthday": "1968-06-27",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2025-01-09",
+        "end": "2027-01-07",
+        "state": "NH",
+        "party": "Republican",
+        "phone": "603-271-2121",
+        "office": "State House, 107 North Main Street, Concord, NH 03301",
+        "url": "https://www.governor.nh.gov",
+        "contact_form": "https://www.governor.nh.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Kelly_Ayotte",
+      "ballotpedia": "Kelly_Ayotte",
+      "twitter": "prior: prior"
+    },
+    "photo_url": "/governors/NH.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-NJ"
+    },
+    "name": {
+      "first": "Phil",
+      "last": "Murphy",
+      "official_full": "Phil Murphy"
+    },
+    "bio": {
+      "birthday": "1957-08-16",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2022-01-18",
+        "end": "2026-01-19",
+        "state": "NJ",
+        "party": "Democrat",
+        "phone": "609-292-6000",
+        "office": "P.O. Box 001, Trenton, NJ 08625",
+        "url": "https://nj.gov/governor/",
+        "contact_form": "https://nj.gov/governor/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Phil_Murphy",
+      "ballotpedia": "Phil_Murphy",
+      "twitter": "GovMurphy",
+      "facebook": "GovMurphy"
+    },
+    "photo_url": "/governors/NJ.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-NM"
+    },
+    "name": {
+      "first": "Michelle",
+      "middle": "Lujan",
+      "last": "Grisham",
+      "official_full": "Michelle Lujan Grisham"
+    },
+    "bio": {
+      "birthday": "1959-10-24",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-01",
+        "end": "2027-01-01",
+        "state": "NM",
+        "party": "Democrat",
+        "phone": "505-476-2200",
+        "office": "State Capitol, Room 400, Santa Fe, NM 87501",
+        "url": "https://www.governor.state.nm.us",
+        "contact_form": "https://www.governor.state.nm.us/contact-the-governor/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Michelle_Lujan_Grisham",
+      "ballotpedia": "Michelle_Lujan_Grisham",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/NM.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-NY"
+    },
+    "name": {
+      "first": "Kathy",
+      "last": "Hochul",
+      "official_full": "Kathy Hochul"
+    },
+    "bio": {
+      "birthday": "1958-08-27",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-01",
+        "end": "2027-01-01",
+        "state": "NY",
+        "party": "Democrat",
+        "phone": "518-474-8390",
+        "office": "State Capitol, Albany, NY 12224",
+        "url": "https://www.governor.ny.gov",
+        "contact_form": "https://www.governor.ny.gov/contact/GovernorContactForm.php"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Kathy_Hochul",
+      "ballotpedia": "Kathy_Hochul",
+      "twitter": "GovKathyHochul",
+      "facebook": "KathyHochul"
+    },
+    "photo_url": "/governors/NY.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-NC"
+    },
+    "name": {
+      "first": "Josh",
+      "last": "Stein",
+      "official_full": "Josh Stein"
+    },
+    "bio": {
+      "birthday": "1966-11-07",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2025-01-01",
+        "end": "2029-01-01",
+        "state": "NC",
+        "party": "Democrat",
+        "phone": "919-814-2000",
+        "office": "20301 Mail Service Center, Raleigh, NC 27699",
+        "url": "https://governor.nc.gov",
+        "contact_form": "https://governor.nc.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Josh_Stein",
+      "ballotpedia": "Josh_Stein",
+      "twitter": "prior: prior"
+    },
+    "photo_url": "/governors/NC.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-ND"
+    },
+    "name": {
+      "first": "Kelly",
+      "last": "Armstrong",
+      "official_full": "Kelly Armstrong"
+    },
+    "bio": {
+      "birthday": "1976-10-08",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2024-12-15",
+        "end": "2028-12-15",
+        "state": "ND",
+        "party": "Republican",
+        "phone": "701-328-2200",
+        "office": "State Capitol, 600 E Boulevard Ave, Bismarck, ND 58505",
+        "url": "https://www.governor.nd.gov",
+        "contact_form": "https://www.governor.nd.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Kelly_Armstrong",
+      "ballotpedia": "Kelly_Armstrong_(North_Dakota)",
+      "twitter": "prior: prior"
+    },
+    "photo_url": "/governors/ND.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-OH"
+    },
+    "name": {
+      "first": "Mike",
+      "last": "DeWine",
+      "official_full": "Mike DeWine"
+    },
+    "bio": {
+      "birthday": "1947-01-05",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-09",
+        "end": "2027-01-11",
+        "state": "OH",
+        "party": "Republican",
+        "phone": "614-644-4357",
+        "office": "Riffe Center, 30th Floor, 77 South High Street, Columbus, OH 43215",
+        "url": "https://governor.ohio.gov",
+        "contact_form": "https://governor.ohio.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Mike_DeWine",
+      "ballotpedia": "Mike_DeWine",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/OH.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-OK"
+    },
+    "name": {
+      "first": "Kevin",
+      "last": "Stitt",
+      "official_full": "Kevin Stitt"
+    },
+    "bio": {
+      "birthday": "1972-12-28",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-09",
+        "end": "2027-01-11",
+        "state": "OK",
+        "party": "Republican",
+        "phone": "405-521-2342",
+        "office": "State Capitol, 2300 N Lincoln Blvd, Room 212, Oklahoma City, OK 73105",
+        "url": "https://www.governor.ok.gov",
+        "contact_form": "https://www.governor.ok.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Kevin_Stitt",
+      "ballotpedia": "Kevin_Stitt",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/OK.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-OR"
+    },
+    "name": {
+      "first": "Tina",
+      "last": "Kotek",
+      "official_full": "Tina Kotek"
+    },
+    "bio": {
+      "birthday": "1966-09-25",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-09",
+        "end": "2027-01-11",
+        "state": "OR",
+        "party": "Democrat",
+        "phone": "503-378-4582",
+        "office": "900 Court Street NE, Suite 254, Salem, OR 97301",
+        "url": "https://www.oregon.gov/governor",
+        "contact_form": "https://www.oregon.gov/gov/Pages/contact.aspx"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Tina_Kotek",
+      "ballotpedia": "Tina_Kotek",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/OR.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-PA"
+    },
+    "name": {
+      "first": "Josh",
+      "last": "Shapiro",
+      "official_full": "Josh Shapiro"
+    },
+    "bio": {
+      "birthday": "1973-06-20",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-17",
+        "end": "2027-01-19",
+        "state": "PA",
+        "party": "Democrat",
+        "phone": "717-787-2500",
+        "office": "508 Main Capitol Building, Harrisburg, PA 17120",
+        "url": "https://www.governor.pa.gov",
+        "contact_form": "https://www.governor.pa.gov/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Josh_Shapiro",
+      "ballotpedia": "Josh_Shapiro",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/PA.png"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-RI"
+    },
+    "name": {
+      "first": "Dan",
+      "last": "McKee",
+      "official_full": "Dan McKee"
+    },
+    "bio": {
+      "birthday": "1951-05-16",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-03",
+        "end": "2027-01-05",
+        "state": "RI",
+        "party": "Democrat",
+        "phone": "401-222-2080",
+        "office": "State House, Room 115, Providence, RI 02903",
+        "url": "https://governor.ri.gov",
+        "contact_form": "https://governor.ri.gov/contact-us"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Dan_McKee",
+      "ballotpedia": "Dan_McKee",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/RI.png"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-SC"
+    },
+    "name": {
+      "first": "Henry",
+      "last": "McMaster",
+      "official_full": "Henry McMaster"
+    },
+    "bio": {
+      "birthday": "1947-05-27",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-11",
+        "end": "2027-01-13",
+        "state": "SC",
+        "party": "Republican",
+        "phone": "803-734-2100",
+        "office": "State House, 1100 Gervais Street, Columbia, SC 29201",
+        "url": "https://governor.sc.gov",
+        "contact_form": "https://governor.sc.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Henry_McMaster",
+      "ballotpedia": "Henry_McMaster",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/SC.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-SD"
+    },
+    "name": {
+      "first": "Kristi",
+      "last": "Noem",
+      "official_full": "Kristi Noem"
+    },
+    "bio": {
+      "birthday": "1971-11-30",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-07",
+        "end": "2027-01-09",
+        "state": "SD",
+        "party": "Republican",
+        "phone": "605-773-3212",
+        "office": "State Capitol, 500 E Capitol Ave, Pierre, SD 57501",
+        "url": "https://sd.gov/governor/",
+        "contact_form": "https://sd.gov/governor/contact.aspx"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Kristi_Noem",
+      "ballotpedia": "Kristi_Noem",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/SD.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-TN"
+    },
+    "name": {
+      "first": "Bill",
+      "last": "Lee",
+      "official_full": "Bill Lee"
+    },
+    "bio": {
+      "birthday": "1959-10-09",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-21",
+        "end": "2027-01-16",
+        "state": "TN",
+        "party": "Republican",
+        "phone": "615-741-2001",
+        "office": "State Capitol, 1st Floor, Nashville, TN 37243",
+        "url": "https://www.tn.gov/governor.html",
+        "contact_form": "https://www.tn.gov/governor/contact-us.html"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Bill_Lee_(American_politician)",
+      "ballotpedia": "Bill_Lee_(Tennessee)",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/TN.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-TX"
+    },
+    "name": {
+      "first": "Greg",
+      "last": "Abbott",
+      "official_full": "Greg Abbott"
+    },
+    "bio": {
+      "birthday": "1957-11-13",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-17",
+        "end": "2027-01-19",
+        "state": "TX",
+        "party": "Republican",
+        "phone": "512-463-2000",
+        "office": "State Capitol, Room 2S.1, Austin, TX 78701",
+        "url": "https://gov.texas.gov",
+        "contact_form": "https://gov.texas.gov/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Greg_Abbott",
+      "ballotpedia": "Greg_Abbott",
+      "twitter": "GregAbbott_TX",
+      "facebook": "TexasGovernor"
+    },
+    "photo_url": "/governors/TX.png"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-UT"
+    },
+    "name": {
+      "first": "Spencer",
+      "last": "Cox",
+      "official_full": "Spencer Cox"
+    },
+    "bio": {
+      "birthday": "1975-07-11",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2025-01-06",
+        "end": "2029-01-01",
+        "state": "UT",
+        "party": "Republican",
+        "phone": "801-538-1000",
+        "office": "Utah State Capitol, 350 State Street, Suite 200, Salt Lake City, UT 84114",
+        "url": "https://governor.utah.gov",
+        "contact_form": "https://governor.utah.gov/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Spencer_Cox_(politician)",
+      "ballotpedia": "Spencer_Cox",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/UT.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-VT"
+    },
+    "name": {
+      "first": "Phil",
+      "last": "Scott",
+      "official_full": "Phil Scott"
+    },
+    "bio": {
+      "birthday": "1958-08-04",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2025-01-09",
+        "end": "2027-01-07",
+        "state": "VT",
+        "party": "Republican",
+        "phone": "802-828-3333",
+        "office": "109 State Street, Pavilion, Montpelier, VT 05609",
+        "url": "https://governor.vermont.gov",
+        "contact_form": "https://governor.vermont.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Phil_Scott_(politician)",
+      "ballotpedia": "Phil_Scott_(Vermont)",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/VT.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-VA"
+    },
+    "name": {
+      "first": "Glenn",
+      "last": "Youngkin",
+      "official_full": "Glenn Youngkin"
+    },
+    "bio": {
+      "birthday": "1966-12-09",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2022-01-15",
+        "end": "2026-01-17",
+        "state": "VA",
+        "party": "Republican",
+        "phone": "804-786-2211",
+        "office": "State Capitol, 3rd Floor, Richmond, VA 23219",
+        "url": "https://www.governor.virginia.gov",
+        "contact_form": "https://www.governor.virginia.gov/contact/"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Glenn_Youngkin",
+      "ballotpedia": "Glenn_Youngkin",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/VA.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-WA"
+    },
+    "name": {
+      "first": "Bob",
+      "last": "Ferguson",
+      "official_full": "Bob Ferguson"
+    },
+    "bio": {
+      "birthday": "1965-03-14",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2025-01-15",
+        "end": "2029-01-10",
+        "state": "WA",
+        "party": "Democrat",
+        "phone": "360-902-4111",
+        "office": "PO Box 40002, Olympia, WA 98504",
+        "url": "https://www.governor.wa.gov",
+        "contact_form": "https://www.governor.wa.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Bob_Ferguson_(politician)",
+      "ballotpedia": "Bob_Ferguson",
+      "twitter": "prior: prior"
+    },
+    "photo_url": "/governors/WA.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-WV"
+    },
+    "name": {
+      "first": "Patrick",
+      "last": "Morrisey",
+      "official_full": "Patrick Morrisey"
+    },
+    "bio": {
+      "birthday": "1967-05-13",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2025-01-13",
+        "end": "2029-01-08",
+        "state": "WV",
+        "party": "Republican",
+        "phone": "304-558-2000",
+        "office": "State Capitol, 1900 Kanawha Blvd E, Charleston, WV 25305",
+        "url": "https://governor.wv.gov",
+        "contact_form": "https://governor.wv.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Patrick_Morrisey",
+      "ballotpedia": "Patrick_Morrisey",
+      "twitter": "prior: prior"
+    },
+    "photo_url": "/governors/WV.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-WI"
+    },
+    "name": {
+      "first": "Tony",
+      "last": "Evers",
+      "official_full": "Tony Evers"
+    },
+    "bio": {
+      "birthday": "1951-11-05",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-03",
+        "end": "2027-01-04",
+        "state": "WI",
+        "party": "Democrat",
+        "phone": "608-266-1212",
+        "office": "115 East State Capitol, Madison, WI 53702",
+        "url": "https://evers.wi.gov",
+        "contact_form": "https://evers.wi.gov/Pages/Contact-the-Governor.aspx"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Tony_Evers",
+      "ballotpedia": "Tony_Evers",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/WI.jpg"
+  },
+  {
+    "id": {
+      "govtrack": "GOV-WY"
+    },
+    "name": {
+      "first": "Mark",
+      "last": "Gordon",
+      "official_full": "Mark Gordon"
+    },
+    "bio": {
+      "birthday": "1957-03-14",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "governor",
+        "start": "2023-01-02",
+        "end": "2027-01-04",
+        "state": "WY",
+        "party": "Republican",
+        "phone": "307-777-7434",
+        "office": "State Capitol, 200 W. 24th Street, Cheyenne, WY 82002",
+        "url": "https://governor.wyo.gov",
+        "contact_form": "https://governor.wyo.gov/contact"
+      }
+    ],
+    "id_external": {
+      "wikipedia": "Mark_Gordon",
+      "ballotpedia": "Mark_Gordon",
+      "twitter": "prior: prior",
+      "facebook": "prior: prior"
+    },
+    "photo_url": "/governors/WY.jpg"
+  }
+]

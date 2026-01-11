@@ -28,6 +28,7 @@ interface Legislator {
     date: string;
     url: string;
   }>;
+  photo_url?: string;
   external_ids?: {
     youtube?: string;
     youtube_id?: string;
@@ -190,6 +191,7 @@ export default function ProfilePage() {
             ideology_score: data.ideology_score,
             news_mentions: data.news_mentions,
             news_sample_headlines: data.news_sample_headlines,
+            photo_url: data.photo_url,
             external_ids: data.external_ids,
           };
         });
@@ -519,9 +521,10 @@ export default function ProfilePage() {
               >
                 {/* Full background image */}
                 <img
-                  src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                  src={legislator.photo_url || `https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
                   alt={legislator.full_name}
                   className="absolute inset-0 w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x400?text=No+Photo";
                   }}
@@ -538,9 +541,9 @@ export default function ProfilePage() {
                 
                 {/* Chamber badge */}
                 <div className={`absolute top-4 right-4 px-2 py-1 rounded text-xs font-bold text-white ${
-                  legislator.chamber === "Senate" ? "bg-amber-600" : "bg-emerald-600"
+                  legislator.chamber === "Senate" ? "bg-amber-600" : legislator.chamber === "Governor" ? "bg-violet-600" : "bg-emerald-600"
                 }`}>
-                  {legislator.chamber === "Senate" ? "SEN" : "REP"}
+                  {legislator.chamber === "Senate" ? "SEN" : legislator.chamber === "Governor" ? "GOV" : "REP"}
                 </div>
                 
                 {/* Favorite button */}
@@ -572,8 +575,10 @@ export default function ProfilePage() {
                   {/* Name and location */}
                   <h4 className="text-lg font-bold leading-tight mb-1">{legislator.full_name}</h4>
                   <p className="text-sm text-gray-300 mb-3">
-                    {STATE_NAMES[legislator.state] || legislator.state}
-                    {legislator.chamber === "House" && legislator.district !== undefined && 
+                    {legislator.chamber === "Governor"
+                      ? `Governor of ${STATE_NAMES[legislator.state] || legislator.state}`
+                      : STATE_NAMES[legislator.state] || legislator.state}
+                    {legislator.chamber === "House" && legislator.district !== undefined &&
                       ` • District ${legislator.district === 0 ? "At-Large" : legislator.district}`
                     }
                   </p>

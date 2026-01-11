@@ -43,6 +43,7 @@ interface Legislator {
     date: string;
     url: string;
   }>;
+  photo_url?: string;
   external_ids: {
     thomas?: string;
     govtrack?: number;
@@ -111,6 +112,7 @@ const PARTY_COLORS: Record<string, string> = {
 const CHAMBER_COLORS: Record<string, string> = {
   Senate: "bg-amber-100 text-amber-800 border-amber-200",
   House: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  Governor: "bg-violet-100 text-violet-800 border-violet-200",
 };
 
 function calculateTimeInOffice(termStart: string): string {
@@ -287,9 +289,11 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
     };
   }, [isOpen]);
 
-  const position = legislator?.chamber === "Senate"
-    ? `${legislator.state_rank?.charAt(0).toUpperCase()}${legislator.state_rank?.slice(1)} Senator from ${STATE_NAMES[legislator.state]}`
-    : legislator ? `Representative from ${STATE_NAMES[legislator.state]}${legislator.district === 0 ? " (At-Large)" : `, District ${legislator.district}`}` : "";
+  const position = legislator?.chamber === "Governor"
+    ? `Governor of ${STATE_NAMES[legislator.state]}`
+    : legislator?.chamber === "Senate"
+      ? `${legislator.state_rank?.charAt(0).toUpperCase()}${legislator.state_rank?.slice(1)} Senator from ${STATE_NAMES[legislator.state]}`
+      : legislator ? `Representative from ${STATE_NAMES[legislator.state]}${legislator.district === 0 ? " (At-Large)" : `, District ${legislator.district}`}` : "";
 
   const visibleSubcommittees = showAllSubcommittees
     ? committees?.subcommittees || []
@@ -375,9 +379,10 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                 {/* Mobile: Stack photo and info | Desktop: Side by side */}
                 <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-5">
                   <img
-                    src={`https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                    src={legislator.photo_url || `https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
                     alt={legislator.full_name}
                     className="w-32 h-40 sm:w-48 sm:h-60 object-cover rounded-lg border-2 border-gray-200 shadow-lg bg-gray-200 flex-shrink-0"
+                    referrerPolicy="no-referrer"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = "https://via.placeholder.com/192x240?text=No+Photo";
                     }}
@@ -395,9 +400,11 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                         {legislator.party}
                       </span>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        legislator.chamber === "Senate" 
+                        legislator.chamber === "Senate"
                           ? "bg-amber-100 text-amber-700"
-                          : "bg-emerald-100 text-emerald-700"
+                          : legislator.chamber === "Governor"
+                            ? "bg-violet-100 text-violet-700"
+                            : "bg-emerald-100 text-emerald-700"
                       }`}>
                         {legislator.chamber}
                       </span>
@@ -478,27 +485,29 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                       )}
                     </div>
                     
-                    {/* Quick stats row */}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-4 pt-4 border-t border-gray-200 text-sm">
-                      <div>
-                        <span className="text-gray-500">{legislator.chamber === "Senate" ? "Class:" : "District:"}</span>{" "}
-                        <span className="font-medium text-gray-900">
-                          {legislator.chamber === "Senate" 
-                            ? legislator.senate_class 
-                            : legislator.district === 0 ? "At-Large" : legislator.district}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Terms:</span>{" "}
-                        <span className="font-medium text-gray-900">{formatTermCount(legislator)}</span>
-                      </div>
-                      {legislator.first_term_start && (
+                    {/* Quick stats row - only for Congress members */}
+                    {legislator.chamber !== "Governor" && (
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-4 pt-4 border-t border-gray-200 text-sm">
                         <div>
-                          <span className="text-gray-500">Years:</span>{" "}
-                          <span className="font-medium text-gray-900">{calculateYearsOfService(legislator.first_term_start)}</span>
+                          <span className="text-gray-500">{legislator.chamber === "Senate" ? "Class:" : "District:"}</span>{" "}
+                          <span className="font-medium text-gray-900">
+                            {legislator.chamber === "Senate"
+                              ? legislator.senate_class
+                              : legislator.district === 0 ? "At-Large" : legislator.district}
+                          </span>
                         </div>
-                      )}
-                    </div>
+                        <div>
+                          <span className="text-gray-500">Terms:</span>{" "}
+                          <span className="font-medium text-gray-900">{formatTermCount(legislator)}</span>
+                        </div>
+                        {legislator.first_term_start && (
+                          <div>
+                            <span className="text-gray-500">Years:</span>{" "}
+                            <span className="font-medium text-gray-900">{calculateYearsOfService(legislator.first_term_start)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -543,27 +552,29 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                   </div>
                 )}
 
-                {/* Legislative Activity */}
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 sm:mb-3">
-                    Legislative Activity
-                  </h3>
-                  
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    <div className="bg-blue-50 rounded-lg p-2 sm:p-3 text-center">
-                      <div className="text-xl sm:text-2xl font-bold text-blue-700">{legislator.sponsored_count || 0}</div>
-                      <div className="text-xs text-blue-600">Sponsored</div>
-                    </div>
-                    <div className="bg-green-50 rounded-lg p-2 sm:p-3 text-center">
-                      <div className="text-xl sm:text-2xl font-bold text-green-700">{legislator.cosponsored_count || 0}</div>
-                      <div className="text-xs text-green-600">Cosponsored</div>
-                    </div>
-                    <div className="bg-amber-50 rounded-lg p-2 sm:p-3 text-center">
-                      <div className="text-xl sm:text-2xl font-bold text-amber-700">{legislator.enacted_count || 0}</div>
-                      <div className="text-xs text-amber-600">Signed into Law</div>
+                {/* Legislative Activity - only for Congress members */}
+                {legislator.chamber !== "Governor" && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2 sm:mb-3">
+                      Legislative Activity
+                    </h3>
+
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                      <div className="bg-blue-50 rounded-lg p-2 sm:p-3 text-center">
+                        <div className="text-xl sm:text-2xl font-bold text-blue-700">{legislator.sponsored_count || 0}</div>
+                        <div className="text-xs text-blue-600">Sponsored</div>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-2 sm:p-3 text-center">
+                        <div className="text-xl sm:text-2xl font-bold text-green-700">{legislator.cosponsored_count || 0}</div>
+                        <div className="text-xs text-green-600">Cosponsored</div>
+                      </div>
+                      <div className="bg-amber-50 rounded-lg p-2 sm:p-3 text-center">
+                        <div className="text-xl sm:text-2xl font-bold text-amber-700">{legislator.enacted_count || 0}</div>
+                        <div className="text-xs text-amber-600">Signed into Law</div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* News Mentions */}
                 {legislator.news_mentions !== undefined && (
@@ -698,14 +709,16 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                         Wikipedia
                       </a>
                     )}
-                    <a
-                      href={`https://www.congress.gov/member/${legislator.full_name.toLowerCase().replace(/[^a-z0-9]/g, '-')}/${legislator.bioguide_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors"
-                    >
-                      Congress.gov
-                    </a>
+                    {legislator.chamber !== "Governor" && (
+                      <a
+                        href={`https://www.congress.gov/member/${legislator.full_name.toLowerCase().replace(/[^a-z0-9]/g, '-')}/${legislator.bioguide_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+                      >
+                        Congress.gov
+                      </a>
+                    )}
                   </div>
                 </div>
 

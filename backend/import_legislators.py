@@ -1,6 +1,7 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
 import requests
+from pathlib import Path
 
 # Initialize Firebase
 cred = credentials.Certificate("firebase-credentials.json")
@@ -112,7 +113,13 @@ def extract_legislator_data(legislator, social_lookup):
     # Add House-specific fields
     if chamber == "House":
         data["district"] = current_term.get("district")
-    
+
+    # Add photo_url only if local image exists
+    script_dir = Path(__file__).parent
+    image_path = script_dir.parent / "frontend" / "public" / "legislators" / f"{bioguide_id}.jpg"
+    if image_path.exists():
+        data["photo_url"] = f"/legislators/{bioguide_id}.jpg"
+
     return data
 
 def import_legislators():
