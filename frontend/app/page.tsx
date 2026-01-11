@@ -220,7 +220,7 @@ function HomeContent() {
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [gridSize, setGridSize] = useState<number>(2); // 1-4 scale, default 2
   const [selectedLegislator, setSelectedLegislator] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<string>("news");
+  const [sortBy, setSortBy] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [heroVisible, setHeroVisible] = useState(true);
   const [heroSlide, setHeroSlide] = useState(0);
@@ -358,7 +358,7 @@ function HomeContent() {
     // Add sort params (only if not default)
     const currentSort = sort ?? sortBy;
     const currentDir = dir ?? sortDirection;
-    if (currentSort !== "news") params.set("sort", currentSort);
+    if (currentSort !== "name") params.set("sort", currentSort);
     if (currentDir !== "asc") params.set("dir", currentDir);
 
     const queryString = params.toString();
