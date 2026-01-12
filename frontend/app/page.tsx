@@ -113,7 +113,7 @@ const SORT_OPTIONS = [
   { key: "news", label: "News Mentions" },
   { key: "ideology", label: "Ideology" },
   { key: "terms", label: "Terms Served" },
-  { key: "years", label: "Time in Congress" },
+  { key: "years", label: "Years in Office" },
   { key: "age", label: "Age" },
   { key: "state", label: "State" },
   { key: "name", label: "Name" },
@@ -465,58 +465,89 @@ function HomeContent() {
       return filtered;
     }
 
-    // When sorting by ideology, exclude members without ideology scores
-    if (sortBy === "ideology") {
-      filtered = filtered.filter(l => l.ideology_score != null);
-    }
-
-    // When sorting by news, exclude members without news data or with 0 mentions
-    if (sortBy === "news") {
-      filtered = filtered.filter(l => l.news_mentions != null && l.news_mentions > 0);
-    }
-
     // Sort the filtered results
+    // Members without data for a sort field go to the END regardless of sort direction
     const sorted = [...filtered].sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case "name":
           comparison = a.last_name.localeCompare(b.last_name);
           break;
-        case "age":
-          const ageA = a.birthday ? new Date(a.birthday).getTime() : 0;
-          const ageB = b.birthday ? new Date(b.birthday).getTime() : 0;
+        case "age": {
+          const hasAgeA = a.birthday != null;
+          const hasAgeB = b.birthday != null;
+          if (!hasAgeA && !hasAgeB) return 0;
+          if (!hasAgeA) return 1; // a goes to end
+          if (!hasAgeB) return -1; // b goes to end
+          const ageA = new Date(a.birthday!).getTime();
+          const ageB = new Date(b.birthday!).getTime();
           comparison = ageA - ageB; // Earlier birthday = older
           break;
-        case "terms":
-          comparison = (b.total_terms || 1) - (a.total_terms || 1);
+        }
+        case "terms": {
+          const hasTermsA = a.total_terms != null;
+          const hasTermsB = b.total_terms != null;
+          if (!hasTermsA && !hasTermsB) return 0;
+          if (!hasTermsA) return 1;
+          if (!hasTermsB) return -1;
+          comparison = b.total_terms! - a.total_terms!;
           break;
-        case "years":
+        }
+        case "years": {
+          const hasYearsA = a.first_term_start != null;
+          const hasYearsB = b.first_term_start != null;
+          if (!hasYearsA && !hasYearsB) return 0;
+          if (!hasYearsA) return 1;
+          if (!hasYearsB) return -1;
           const yearsA = getYearsInCongress(a.first_term_start);
           const yearsB = getYearsInCongress(b.first_term_start);
           comparison = yearsB - yearsA;
           break;
-        case "enacted":
-          comparison = (b.enacted_count || 0) - (a.enacted_count || 0);
+        }
+        case "enacted": {
+          const hasEnactedA = a.enacted_count != null;
+          const hasEnactedB = b.enacted_count != null;
+          if (!hasEnactedA && !hasEnactedB) return 0;
+          if (!hasEnactedA) return 1;
+          if (!hasEnactedB) return -1;
+          comparison = b.enacted_count! - a.enacted_count!;
           break;
-        case "sponsored":
-          comparison = (b.sponsored_count || 0) - (a.sponsored_count || 0);
+        }
+        case "sponsored": {
+          const hasSponsoredA = a.sponsored_count != null;
+          const hasSponsoredB = b.sponsored_count != null;
+          if (!hasSponsoredA && !hasSponsoredB) return 0;
+          if (!hasSponsoredA) return 1;
+          if (!hasSponsoredB) return -1;
+          comparison = b.sponsored_count! - a.sponsored_count!;
           break;
-        case "ideology":
-          // All members here have ideology scores (filtered above)
+        }
+        case "ideology": {
+          const hasIdeologyA = a.ideology_score != null;
+          const hasIdeologyB = b.ideology_score != null;
+          if (!hasIdeologyA && !hasIdeologyB) return 0;
+          if (!hasIdeologyA) return 1;
+          if (!hasIdeologyB) return -1;
           comparison = a.ideology_score! - b.ideology_score!;
           break;
-        case "news":
-          // All members here have news data (filtered above)
-          comparison = (b.news_mentions || 0) - (a.news_mentions || 0);
+        }
+        case "news": {
+          const hasNewsA = a.news_mentions != null && a.news_mentions > 0;
+          const hasNewsB = b.news_mentions != null && b.news_mentions > 0;
+          if (!hasNewsA && !hasNewsB) return 0;
+          if (!hasNewsA) return 1;
+          if (!hasNewsB) return -1;
+          comparison = b.news_mentions! - a.news_mentions!;
           break;
+        }
         case "state":
           comparison = a.state.localeCompare(b.state);
           break;
         default:
           comparison = 0;
       }
-      
+
       return sortDirection === "asc" ? comparison : -comparison;
     });
 
@@ -902,7 +933,7 @@ function HomeContent() {
                     onClick={() => toggleCollapse('yearsInCongress')}
                     className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
                   >
-                    <span>Years in Congress</span>
+                    <span>Years in Office</span>
                     <span className={`text-gray-400 transition-transform duration-200 ${collapsed.yearsInCongress ? '' : 'rotate-90'}`}>▶</span>
                   </button>
                   {!collapsed.yearsInCongress && (
