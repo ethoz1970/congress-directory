@@ -1,4 +1,5 @@
 import os
+import json
 import httpx
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,9 +8,27 @@ from firebase_admin import credentials, firestore
 from typing import Optional, List
 from datetime import datetime, timedelta
 
-cred = credentials.Certificate("firebase-credentials.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+# Local data mode: set USE_LOCAL_DATA=true to skip Firestore and use exported JSON files
+USE_LOCAL_DATA = os.environ.get("USE_LOCAL_DATA", "").lower() in ("true", "1", "yes")
+
+LOCAL_DATA = {}
+
+if USE_LOCAL_DATA:
+    local_data_dir = os.path.join(os.path.dirname(__file__), "local_data")
+    for name in ("legislators", "committees", "committee_memberships"):
+        path = os.path.join(local_data_dir, f"{name}.json")
+        if os.path.exists(path):
+            with open(path, "r") as f:
+                LOCAL_DATA[name] = json.load(f)
+            print(f"[LOCAL MODE] Loaded {len(LOCAL_DATA[name])} {name} from {path}")
+        else:
+            LOCAL_DATA[name] = []
+            print(f"[LOCAL MODE] WARNING: {path} not found")
+    db = None
+else:
+    cred = credentials.Certificate("firebase-credentials.json")
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
 
 app = FastAPI()
 
@@ -34,62 +53,77 @@ cache = {
 CACHE_DURATION = timedelta(hours=24)  # Cache for 24 hours
 
 def get_cached_legislators():
-    """Get legislators from cache or Firestore"""
+    """Get legislators from cache, local JSON, or Firestore"""
     now = datetime.now()
-    
+
     # Check if cache is valid
     if cache["legislators"]["data"] and cache["legislators"]["expires"] and cache["legislators"]["expires"] > now:
         return cache["legislators"]["data"]
-    
-    # Fetch from Firestore
-    docs = db.collection("legislators").stream()
-    legislators = []
-    for doc in docs:
-        legislator = doc.to_dict()
-        legislator["id"] = doc.id
-        legislators.append(legislator)
-        # Also cache individually
+
+    if USE_LOCAL_DATA:
+        legislators = LOCAL_DATA.get("legislators", [])
+    else:
+        # Fetch from Firestore
+        docs = db.collection("legislators").stream()
+        legislators = []
+        for doc in docs:
+            legislator = doc.to_dict()
+            legislator["id"] = doc.id
+            legislators.append(legislator)
+
+    # Cache individually
+    for legislator in legislators:
         cache["legislators_by_id"][legislator.get("bioguide_id")] = {
             "data": legislator,
             "expires": now + CACHE_DURATION
         }
-    
+
     legislators.sort(key=lambda l: (
         l.get("state", ""),
         l.get("chamber", ""),
         l.get("last_name", "")
     ))
-    
+
     # Update cache
     cache["legislators"]["data"] = legislators
     cache["legislators"]["expires"] = now + CACHE_DURATION
-    
+
     return legislators
 
 def get_cached_legislator(bioguide_id: str):
-    """Get single legislator from cache or Firestore"""
+    """Get single legislator from cache, local JSON, or Firestore"""
     now = datetime.now()
-    
+
     # Check individual cache
     if bioguide_id in cache["legislators_by_id"]:
         cached = cache["legislators_by_id"][bioguide_id]
         if cached["expires"] > now:
             return cached["data"]
-    
+
+    if USE_LOCAL_DATA:
+        for leg in LOCAL_DATA.get("legislators", []):
+            if leg.get("bioguide_id") == bioguide_id:
+                cache["legislators_by_id"][bioguide_id] = {
+                    "data": leg,
+                    "expires": now + CACHE_DURATION
+                }
+                return leg
+        return None
+
     # Fetch from Firestore
     doc = db.collection("legislators").document(bioguide_id).get()
     if not doc.exists:
         return None
-    
+
     legislator = doc.to_dict()
     legislator["id"] = doc.id
-    
+
     # Update cache
     cache["legislators_by_id"][bioguide_id] = {
         "data": legislator,
         "expires": now + CACHE_DURATION
     }
-    
+
     return legislator
 
 @app.get("/api/hello")
@@ -212,30 +246,37 @@ def get_stats():
 @app.get("/api/committees")
 def get_committees(committee_type: Optional[str] = None):
     """Get all committees, optionally filtered by type."""
-    query = db.collection("committees")
-    
-    if committee_type:
-        query = query.where("type", "==", committee_type.lower())
-    
-    docs = query.stream()
-    committees = []
-    for doc in docs:
-        committee = doc.to_dict()
-        committee["id"] = doc.id
-        committees.append(committee)
-    
+    if USE_LOCAL_DATA:
+        committees = LOCAL_DATA.get("committees", [])
+        if committee_type:
+            committees = [c for c in committees if c.get("type") == committee_type.lower()]
+    else:
+        query = db.collection("committees")
+        if committee_type:
+            query = query.where("type", "==", committee_type.lower())
+        docs = query.stream()
+        committees = []
+        for doc in docs:
+            committee = doc.to_dict()
+            committee["id"] = doc.id
+            committees.append(committee)
+
     committees.sort(key=lambda c: c.get("name", ""))
-    
     return committees
 
 @app.get("/api/committees/{committee_id}")
 def get_committee(committee_id: str):
     """Get a single committee by its thomas_id."""
+    if USE_LOCAL_DATA:
+        for c in LOCAL_DATA.get("committees", []):
+            if c.get("id") == committee_id or c.get("thomas_id") == committee_id:
+                return c
+        raise HTTPException(status_code=404, detail="Committee not found")
+
     doc = db.collection("committees").document(committee_id).get()
-    
     if not doc.exists:
         raise HTTPException(status_code=404, detail="Committee not found")
-    
+
     committee = doc.to_dict()
     committee["id"] = doc.id
     return committee
@@ -243,8 +284,28 @@ def get_committee(committee_id: str):
 @app.get("/api/committees/{committee_id}/members")
 def get_committee_members(committee_id: str):
     """Get all members of a committee."""
+    if USE_LOCAL_DATA:
+        memberships = LOCAL_DATA.get("committee_memberships", [])
+        legislators_by_id = {l.get("bioguide_id"): l for l in LOCAL_DATA.get("legislators", [])}
+        members = []
+        for data in memberships:
+            for assignment in data.get("committees", []):
+                if assignment.get("committee_id") == committee_id:
+                    leg = legislators_by_id.get(data.get("bioguide_id"))
+                    if leg:
+                        members.append({
+                            "bioguide_id": data["bioguide_id"],
+                            "legislator": leg,
+                            "rank": assignment.get("rank"),
+                            "title": assignment.get("title"),
+                            "party": assignment.get("party"),
+                        })
+                    break
+        members.sort(key=lambda m: m.get("rank") or 999)
+        return members
+
     docs = db.collection("committee_memberships").stream()
-    
+
     members = []
     for doc in docs:
         data = doc.to_dict()
@@ -261,38 +322,55 @@ def get_committee_members(committee_id: str):
                     }
                     members.append(member)
                 break
-    
+
     members.sort(key=lambda m: m.get("rank") or 999)
-    
+
     return members
 
 @app.get("/api/legislators/{bioguide_id}/committees")
 def get_legislator_committees(bioguide_id: str):
     """Get all committees that a legislator serves on."""
+    if USE_LOCAL_DATA:
+        # Verify legislator exists
+        leg = get_cached_legislator(bioguide_id)
+        if not leg:
+            raise HTTPException(status_code=404, detail="Legislator not found")
+        for data in LOCAL_DATA.get("committee_memberships", []):
+            if data.get("bioguide_id") == bioguide_id:
+                committees = []
+                subcommittees = []
+                for assignment in data.get("committees", []):
+                    if assignment.get("is_subcommittee"):
+                        subcommittees.append(assignment)
+                    else:
+                        committees.append(assignment)
+                return {"bioguide_id": bioguide_id, "committees": committees, "subcommittees": subcommittees}
+        return {"bioguide_id": bioguide_id, "committees": [], "subcommittees": []}
+
     leg_doc = db.collection("legislators").document(bioguide_id).get()
     if not leg_doc.exists:
         raise HTTPException(status_code=404, detail="Legislator not found")
-    
+
     membership_doc = db.collection("committee_memberships").document(bioguide_id).get()
-    
+
     if not membership_doc.exists:
         return {
             "bioguide_id": bioguide_id,
             "committees": [],
             "subcommittees": []
         }
-    
+
     data = membership_doc.to_dict()
-    
+
     committees = []
     subcommittees = []
-    
+
     for assignment in data.get("committees", []):
         if assignment.get("is_subcommittee"):
             subcommittees.append(assignment)
         else:
             committees.append(assignment)
-    
+
     return {
         "bioguide_id": bioguide_id,
         "committees": committees,
@@ -597,11 +675,9 @@ async def get_youtube_videos(bioguide_id: str, refresh: bool = False):
         return {"videos": [], "error": "YouTube API key not configured"}
     
     # Get legislator to find YouTube channel
-    doc = db.collection("legislators").document(bioguide_id).get()
-    if not doc.exists:
+    legislator = get_cached_legislator(bioguide_id)
+    if not legislator:
         raise HTTPException(status_code=404, detail="Legislator not found")
-    
-    legislator = doc.to_dict()
     external_ids = legislator.get("external_ids", {})
     youtube_channel = external_ids.get("youtube")
     youtube_id = external_ids.get("youtube_id")
@@ -609,25 +685,27 @@ async def get_youtube_videos(bioguide_id: str, refresh: bool = False):
     if not youtube_channel and not youtube_id:
         return {"videos": [], "bioguide_id": bioguide_id}
     
-    # Check cache first
-    cache_ref = db.collection("youtube_cache").document(bioguide_id)
-    cache_doc = cache_ref.get()
-    
-    if cache_doc.exists and not refresh:
-        cache_data = cache_doc.to_dict()
-        cached_at = cache_data.get("cached_at")
-        if cached_at:
-            from datetime import datetime, timedelta
-            cache_time = cached_at
-            if hasattr(cache_time, 'timestamp'):
-                cache_age = datetime.now().timestamp() - cache_time.timestamp()
-                # Cache for 24 hours
-                if cache_age < 86400:
-                    return {
-                        "videos": cache_data.get("videos", []),
-                        "bioguide_id": bioguide_id,
-                        "cached": True
-                    }
+    # Check cache first (Firestore cache only available when db is connected)
+    cache_ref = None
+    if db:
+        cache_ref = db.collection("youtube_cache").document(bioguide_id)
+        cache_doc = cache_ref.get()
+
+        if cache_doc.exists and not refresh:
+            cache_data = cache_doc.to_dict()
+            cached_at = cache_data.get("cached_at")
+            if cached_at:
+                from datetime import datetime, timedelta
+                cache_time = cached_at
+                if hasattr(cache_time, 'timestamp'):
+                    cache_age = datetime.now().timestamp() - cache_time.timestamp()
+                    # Cache for 24 hours
+                    if cache_age < 86400:
+                        return {
+                            "videos": cache_data.get("videos", []),
+                            "bioguide_id": bioguide_id,
+                            "cached": True
+                        }
     
     # Fetch from YouTube API using uploads playlist method
     try:
@@ -703,14 +781,15 @@ async def get_youtube_videos(bioguide_id: str, refresh: bool = False):
                         "published_at": snippet.get("publishedAt", "")
                     })
             
-            # Cache the results
-            from datetime import datetime
-            cache_ref.set({
-                "bioguide_id": bioguide_id,
-                "videos": videos,
-                "cached_at": datetime.now(),
-                "channel_id": channel_id
-            })
+            # Cache the results (only when Firestore is available)
+            if cache_ref:
+                from datetime import datetime
+                cache_ref.set({
+                    "bioguide_id": bioguide_id,
+                    "videos": videos,
+                    "cached_at": datetime.now(),
+                    "channel_id": channel_id
+                })
             
             return {
                 "videos": videos,
@@ -787,14 +866,16 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
                     last_name = name_parts[-2] if len(name_parts) > 1 else ""
                 
                 # Query legislators by state
-                query = db.collection("legislators").where("state", "==", rep_state).stream()
-                
-                for doc in query:
-                    leg = doc.to_dict()
+                if USE_LOCAL_DATA:
+                    state_legs = [l for l in LOCAL_DATA.get("legislators", []) if l.get("state", "").upper() == rep_state.upper()]
+                else:
+                    state_legs = [doc.to_dict() for doc in db.collection("legislators").where("state", "==", rep_state).stream()]
+
+                for leg in state_legs:
                     leg_last_name = leg.get("last_name", "").lower()
                     leg_full_name = leg.get("full_name", "").lower()
                     bioguide = leg.get("bioguide_id")
-                    
+
                     # Check if last names match
                     if (last_name.lower() == leg_last_name or last_name.lower() in leg_full_name) and bioguide not in matched_bioguides:
                         matched.append({
@@ -808,12 +889,14 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
                         })
                         matched_bioguides.add(bioguide)
                         break
-            
+
             # Now ensure we have both senators for the state
-            senators_query = db.collection("legislators").where("state", "==", state).where("chamber", "==", "Senate").stream()
-            
-            for doc in senators_query:
-                leg = doc.to_dict()
+            if USE_LOCAL_DATA:
+                senators = [l for l in LOCAL_DATA.get("legislators", []) if l.get("state", "").upper() == state.upper() and l.get("chamber") == "Senate"]
+            else:
+                senators = [doc.to_dict() for doc in db.collection("legislators").where("state", "==", state).where("chamber", "==", "Senate").stream()]
+
+            for leg in senators:
                 bioguide = leg.get("bioguide_id")
                 
                 if bioguide not in matched_bioguides:
