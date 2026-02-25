@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { API_URL } from "../../lib/api";
+import { cachedFetch, CACHE_TTL } from "../../lib/fetchCache";
 import { useFavorites } from "../../lib/useFavorites";
 import { useAuth } from "../../lib/AuthContext";
 
@@ -226,19 +227,14 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
     setShowAllSubcommittees(false);
     setSelectedVideo(null);
 
-    fetch(`${API_URL}/api/legislators/${bioguideId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Legislator not found");
-        return res.json();
-      })
+    cachedFetch<Legislator>(`${API_URL}/api/legislators/${bioguideId}`, CACHE_TTL.LEGISLATOR)
       .then((data) => {
         setLegislator(data);
         setLoading(false);
-        
+
         // Fetch YouTube videos if they have a channel
         if (data.external_ids?.youtube || data.external_ids?.youtube_id) {
-          fetch(`${API_URL}/api/legislators/${bioguideId}/youtube-videos`)
-            .then((res) => res.json())
+          cachedFetch<{ videos: YouTubeVideo[] }>(`${API_URL}/api/legislators/${bioguideId}/youtube-videos`, CACHE_TTL.YOUTUBE)
             .then((videos) => {
               setYoutubeVideos(videos.videos || []);
               setYoutubeLoading(false);
@@ -258,8 +254,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
         setYoutubeLoading(false);
       });
 
-    fetch(`${API_URL}/api/legislators/${bioguideId}/committees`)
-      .then((res) => res.json())
+    cachedFetch<CommitteesData>(`${API_URL}/api/legislators/${bioguideId}/committees`, CACHE_TTL.COMMITTEES)
       .then((data) => {
         setCommittees(data);
       })

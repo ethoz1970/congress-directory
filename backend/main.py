@@ -1,7 +1,7 @@
 import os
 import json
 import httpx
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -49,8 +49,17 @@ CONGRESS_API_BASE = "https://api.congress.gov/v3"
 cache = {
     "legislators": {"data": None, "expires": None},
     "legislators_by_id": {},  # Individual legislator cache
+    "committees": {"data": None, "expires": None},
+    "memberships_by_legislator": {"data": None, "expires": None},
+    "memberships_by_committee": {"data": None, "expires": None},
+    "sponsored_legislation": {},  # Keyed by (bioguide_id, limit, offset)
+    "cosponsored_legislation": {},  # Keyed by (bioguide_id, limit, offset)
+    "legislation_summaries": {},  # Keyed by bioguide_id
+    "find_rep": {},  # Keyed by zip code
 }
 CACHE_DURATION = timedelta(hours=24)  # Cache for 24 hours
+LEGISLATION_CACHE_DURATION = timedelta(hours=6)
+FIND_REP_CACHE_DURATION = timedelta(hours=24)
 
 def get_cached_legislators():
     """Get legislators from cache, local JSON, or Firestore"""
@@ -126,6 +135,69 @@ def get_cached_legislator(bioguide_id: str):
 
     return legislator
 
+def get_cached_committees():
+    """Get committees from cache, local JSON, or Firestore"""
+    now = datetime.now()
+    if cache["committees"]["data"] and cache["committees"]["expires"] and cache["committees"]["expires"] > now:
+        return cache["committees"]["data"]
+
+    if USE_LOCAL_DATA:
+        committees = LOCAL_DATA.get("committees", [])
+    else:
+        docs = db.collection("committees").stream()
+        committees = []
+        for doc in docs:
+            committee = doc.to_dict()
+            committee["id"] = doc.id
+            committees.append(committee)
+
+    committees.sort(key=lambda c: c.get("name", ""))
+    cache["committees"]["data"] = committees
+    cache["committees"]["expires"] = now + CACHE_DURATION
+    return committees
+
+def get_cached_memberships():
+    """Get memberships indexed by legislator and by committee from cache, local JSON, or Firestore"""
+    now = datetime.now()
+    if (cache["memberships_by_legislator"]["data"] and
+        cache["memberships_by_legislator"]["expires"] and
+        cache["memberships_by_legislator"]["expires"] > now):
+        return cache["memberships_by_legislator"]["data"], cache["memberships_by_committee"]["data"]
+
+    if USE_LOCAL_DATA:
+        raw = LOCAL_DATA.get("committee_memberships", [])
+    else:
+        docs = db.collection("committee_memberships").stream()
+        raw = []
+        for doc in docs:
+            data = doc.to_dict()
+            data["bioguide_id"] = doc.id
+            raw.append(data)
+
+    by_legislator = {}  # bioguide_id -> membership data
+    by_committee = {}   # committee_id -> list of {bioguide_id, rank, title, party}
+
+    for data in raw:
+        bio_id = data.get("bioguide_id")
+        by_legislator[bio_id] = data
+        for assignment in data.get("committees", []):
+            cid = assignment.get("committee_id")
+            if cid:
+                if cid not in by_committee:
+                    by_committee[cid] = []
+                by_committee[cid].append({
+                    "bioguide_id": bio_id,
+                    "rank": assignment.get("rank"),
+                    "title": assignment.get("title"),
+                    "party": assignment.get("party"),
+                })
+
+    cache["memberships_by_legislator"]["data"] = by_legislator
+    cache["memberships_by_legislator"]["expires"] = now + CACHE_DURATION
+    cache["memberships_by_committee"]["data"] = by_committee
+    cache["memberships_by_committee"]["expires"] = now + CACHE_DURATION
+    return by_legislator, by_committee
+
 @app.get("/api/hello")
 def hello():
     return {"message": "Hello from Python!"}
@@ -136,6 +208,16 @@ def clear_cache():
     cache["legislators"]["data"] = None
     cache["legislators"]["expires"] = None
     cache["legislators_by_id"] = {}
+    cache["committees"]["data"] = None
+    cache["committees"]["expires"] = None
+    cache["memberships_by_legislator"]["data"] = None
+    cache["memberships_by_legislator"]["expires"] = None
+    cache["memberships_by_committee"]["data"] = None
+    cache["memberships_by_committee"]["expires"] = None
+    cache["sponsored_legislation"] = {}
+    cache["cosponsored_legislation"] = {}
+    cache["legislation_summaries"] = {}
+    cache["find_rep"] = {}
     return {"message": "Cache cleared successfully"}
 
 @app.get("/api/cache/status")
@@ -160,6 +242,7 @@ def cache_status():
 
 @app.get("/api/legislators")
 def get_legislators(
+    response: Response,
     state: Optional[str] = None,
     party: Optional[str] = None,
     chamber: Optional[str] = None
@@ -168,29 +251,31 @@ def get_legislators(
     Get all legislators, optionally filtered by state, party, or chamber.
     Uses caching to reduce Firestore reads.
     """
+    response.headers["Cache-Control"] = "public, max-age=3600"
     # Get from cache (or refresh cache if expired)
     legislators = get_cached_legislators()
-    
+
     # Apply filters in memory
     if state:
         legislators = [l for l in legislators if l.get("state", "").upper() == state.upper()]
-    
+
     if party:
         legislators = [l for l in legislators if l.get("party") == party]
-    
+
     if chamber:
         legislators = [l for l in legislators if l.get("chamber") == chamber]
-    
+
     return legislators
 
 @app.get("/api/legislators/{bioguide_id}")
-def get_legislator(bioguide_id: str):
+def get_legislator(bioguide_id: str, response: Response):
     """Get a single legislator by their Bioguide ID. Uses caching."""
+    response.headers["Cache-Control"] = "public, max-age=3600"
     legislator = get_cached_legislator(bioguide_id)
-    
+
     if not legislator:
         raise HTTPException(status_code=404, detail="Legislator not found")
-    
+
     return legislator
 
 @app.get("/api/legislators/state/{state}")
@@ -207,8 +292,9 @@ def get_legislators_by_state(state: str, chamber: Optional[str] = None):
     return result
 
 @app.get("/api/stats")
-def get_stats():
+def get_stats(response: Response):
     """Get summary statistics about the legislators."""
+    response.headers["Cache-Control"] = "public, max-age=3600"
     legislators = get_cached_legislators()
     
     chambers = {}
@@ -244,127 +330,61 @@ def get_stats():
 # ============ COMMITTEE ENDPOINTS ============
 
 @app.get("/api/committees")
-def get_committees(committee_type: Optional[str] = None):
+def get_committees(response: Response, committee_type: Optional[str] = None):
     """Get all committees, optionally filtered by type."""
-    if USE_LOCAL_DATA:
-        committees = LOCAL_DATA.get("committees", [])
-        if committee_type:
-            committees = [c for c in committees if c.get("type") == committee_type.lower()]
-    else:
-        query = db.collection("committees")
-        if committee_type:
-            query = query.where("type", "==", committee_type.lower())
-        docs = query.stream()
-        committees = []
-        for doc in docs:
-            committee = doc.to_dict()
-            committee["id"] = doc.id
-            committees.append(committee)
-
-    committees.sort(key=lambda c: c.get("name", ""))
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    committees = get_cached_committees()
+    if committee_type:
+        committees = [c for c in committees if c.get("type") == committee_type.lower()]
     return committees
 
 @app.get("/api/committees/{committee_id}")
-def get_committee(committee_id: str):
+def get_committee(committee_id: str, response: Response):
     """Get a single committee by its thomas_id."""
-    if USE_LOCAL_DATA:
-        for c in LOCAL_DATA.get("committees", []):
-            if c.get("id") == committee_id or c.get("thomas_id") == committee_id:
-                return c
-        raise HTTPException(status_code=404, detail="Committee not found")
-
-    doc = db.collection("committees").document(committee_id).get()
-    if not doc.exists:
-        raise HTTPException(status_code=404, detail="Committee not found")
-
-    committee = doc.to_dict()
-    committee["id"] = doc.id
-    return committee
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    for c in get_cached_committees():
+        if c.get("id") == committee_id or c.get("thomas_id") == committee_id:
+            return c
+    raise HTTPException(status_code=404, detail="Committee not found")
 
 @app.get("/api/committees/{committee_id}/members")
-def get_committee_members(committee_id: str):
+def get_committee_members(committee_id: str, response: Response):
     """Get all members of a committee."""
-    if USE_LOCAL_DATA:
-        memberships = LOCAL_DATA.get("committee_memberships", [])
-        legislators_by_id = {l.get("bioguide_id"): l for l in LOCAL_DATA.get("legislators", [])}
-        members = []
-        for data in memberships:
-            for assignment in data.get("committees", []):
-                if assignment.get("committee_id") == committee_id:
-                    leg = legislators_by_id.get(data.get("bioguide_id"))
-                    if leg:
-                        members.append({
-                            "bioguide_id": data["bioguide_id"],
-                            "legislator": leg,
-                            "rank": assignment.get("rank"),
-                            "title": assignment.get("title"),
-                            "party": assignment.get("party"),
-                        })
-                    break
-        members.sort(key=lambda m: m.get("rank") or 999)
-        return members
-
-    docs = db.collection("committee_memberships").stream()
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    _, by_committee = get_cached_memberships()
+    legislators_by_id = {l.get("bioguide_id"): l for l in get_cached_legislators()}
 
     members = []
-    for doc in docs:
-        data = doc.to_dict()
-        for assignment in data.get("committees", []):
-            if assignment.get("committee_id") == committee_id:
-                leg_doc = db.collection("legislators").document(data["bioguide_id"]).get()
-                if leg_doc.exists:
-                    member = {
-                        "bioguide_id": data["bioguide_id"],
-                        "legislator": leg_doc.to_dict(),
-                        "rank": assignment.get("rank"),
-                        "title": assignment.get("title"),
-                        "party": assignment.get("party"),
-                    }
-                    members.append(member)
-                break
+    for entry in by_committee.get(committee_id, []):
+        leg = legislators_by_id.get(entry["bioguide_id"])
+        if leg:
+            members.append({
+                "bioguide_id": entry["bioguide_id"],
+                "legislator": leg,
+                "rank": entry.get("rank"),
+                "title": entry.get("title"),
+                "party": entry.get("party"),
+            })
 
     members.sort(key=lambda m: m.get("rank") or 999)
-
     return members
 
 @app.get("/api/legislators/{bioguide_id}/committees")
-def get_legislator_committees(bioguide_id: str):
+def get_legislator_committees(bioguide_id: str, response: Response):
     """Get all committees that a legislator serves on."""
-    if USE_LOCAL_DATA:
-        # Verify legislator exists
-        leg = get_cached_legislator(bioguide_id)
-        if not leg:
-            raise HTTPException(status_code=404, detail="Legislator not found")
-        for data in LOCAL_DATA.get("committee_memberships", []):
-            if data.get("bioguide_id") == bioguide_id:
-                committees = []
-                subcommittees = []
-                for assignment in data.get("committees", []):
-                    if assignment.get("is_subcommittee"):
-                        subcommittees.append(assignment)
-                    else:
-                        committees.append(assignment)
-                return {"bioguide_id": bioguide_id, "committees": committees, "subcommittees": subcommittees}
-        return {"bioguide_id": bioguide_id, "committees": [], "subcommittees": []}
-
-    leg_doc = db.collection("legislators").document(bioguide_id).get()
-    if not leg_doc.exists:
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    leg = get_cached_legislator(bioguide_id)
+    if not leg:
         raise HTTPException(status_code=404, detail="Legislator not found")
 
-    membership_doc = db.collection("committee_memberships").document(bioguide_id).get()
+    by_legislator, _ = get_cached_memberships()
+    data = by_legislator.get(bioguide_id)
 
-    if not membership_doc.exists:
-        return {
-            "bioguide_id": bioguide_id,
-            "committees": [],
-            "subcommittees": []
-        }
-
-    data = membership_doc.to_dict()
+    if not data:
+        return {"bioguide_id": bioguide_id, "committees": [], "subcommittees": []}
 
     committees = []
     subcommittees = []
-
     for assignment in data.get("committees", []):
         if assignment.get("is_subcommittee"):
             subcommittees.append(assignment)
@@ -383,22 +403,26 @@ def get_legislator_committees(bioguide_id: str):
 @app.get("/api/legislators/{bioguide_id}/sponsored-legislation")
 async def get_sponsored_legislation(
     bioguide_id: str,
+    response: Response,
     limit: int = Query(default=20, le=250),
     offset: int = Query(default=0)
 ):
     """
     Get bills sponsored by a legislator from Congress.gov API.
-    
-    Args:
-        bioguide_id: The legislator's Bioguide ID
-        limit: Number of results to return (max 250)
-        offset: Starting position for pagination
     """
+    response.headers["Cache-Control"] = "public, max-age=1800"
     # Verify legislator exists
-    leg_doc = db.collection("legislators").document(bioguide_id).get()
-    if not leg_doc.exists:
+    if not get_cached_legislator(bioguide_id):
         raise HTTPException(status_code=404, detail="Legislator not found")
-    
+
+    # Check in-memory cache
+    now = datetime.now()
+    cache_key = (bioguide_id, limit, offset)
+    if cache_key in cache["sponsored_legislation"]:
+        cached = cache["sponsored_legislation"][cache_key]
+        if cached["expires"] > now:
+            return cached["data"]
+
     url = f"{CONGRESS_API_BASE}/member/{bioguide_id}/sponsored-legislation"
     params = {
         "api_key": CONGRESS_API_KEY,
@@ -406,18 +430,20 @@ async def get_sponsored_legislation(
         "limit": limit,
         "offset": offset
     }
-    
+
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(url, params=params, timeout=30.0)
-            response.raise_for_status()
-            data = response.json()
-            
-            return {
+            resp = await client.get(url, params=params, timeout=30.0)
+            resp.raise_for_status()
+            data = resp.json()
+
+            result = {
                 "bioguide_id": bioguide_id,
                 "pagination": data.get("pagination", {}),
                 "bills": data.get("sponsoredLegislation", [])
             }
+            cache["sponsored_legislation"][cache_key] = {"data": result, "expires": now + LEGISLATION_CACHE_DURATION}
+            return result
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 return {
@@ -433,16 +459,25 @@ async def get_sponsored_legislation(
 @app.get("/api/legislators/{bioguide_id}/cosponsored-legislation")
 async def get_cosponsored_legislation(
     bioguide_id: str,
+    response: Response,
     limit: int = Query(default=20, le=250),
     offset: int = Query(default=0)
 ):
     """
     Get bills cosponsored by a legislator from Congress.gov API.
     """
-    leg_doc = db.collection("legislators").document(bioguide_id).get()
-    if not leg_doc.exists:
+    response.headers["Cache-Control"] = "public, max-age=1800"
+    if not get_cached_legislator(bioguide_id):
         raise HTTPException(status_code=404, detail="Legislator not found")
-    
+
+    # Check in-memory cache
+    now = datetime.now()
+    cache_key = (bioguide_id, limit, offset)
+    if cache_key in cache["cosponsored_legislation"]:
+        cached = cache["cosponsored_legislation"][cache_key]
+        if cached["expires"] > now:
+            return cached["data"]
+
     url = f"{CONGRESS_API_BASE}/member/{bioguide_id}/cosponsored-legislation"
     params = {
         "api_key": CONGRESS_API_KEY,
@@ -450,18 +485,20 @@ async def get_cosponsored_legislation(
         "limit": limit,
         "offset": offset
     }
-    
+
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(url, params=params, timeout=30.0)
-            response.raise_for_status()
-            data = response.json()
-            
-            return {
+            resp = await client.get(url, params=params, timeout=30.0)
+            resp.raise_for_status()
+            data = resp.json()
+
+            result = {
                 "bioguide_id": bioguide_id,
                 "pagination": data.get("pagination", {}),
                 "bills": data.get("cosponsoredLegislation", [])
             }
+            cache["cosponsored_legislation"][cache_key] = {"data": result, "expires": now + LEGISLATION_CACHE_DURATION}
+            return result
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 return {
@@ -475,66 +512,74 @@ async def get_cosponsored_legislation(
 
 
 @app.get("/api/legislators/{bioguide_id}/legislation-summary")
-async def get_legislation_summary(bioguide_id: str, refresh: bool = False):
+async def get_legislation_summary(bioguide_id: str, response: Response, refresh: bool = False):
     """
     Get a summary of sponsored and cosponsored legislation counts,
-    including bills signed into law. Results are cached in Firestore
-    and refreshed daily or on demand.
+    including bills signed into law. Results are cached in-memory and in Firestore,
+    refreshed daily or on demand.
     """
-    leg_doc = db.collection("legislators").document(bioguide_id).get()
-    if not leg_doc.exists:
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    if not get_cached_legislator(bioguide_id):
         raise HTTPException(status_code=404, detail="Legislator not found")
-    
-    # Check for cached data
-    cache_ref = db.collection("legislation_cache").document(bioguide_id)
-    cache_doc = cache_ref.get()
-    
-    if cache_doc.exists and not refresh:
-        cached_data = cache_doc.to_dict()
-        cached_at = cached_data.get("cached_at")
-        
-        # Use cache if less than 24 hours old
-        if cached_at:
-            from datetime import datetime, timezone, timedelta
-            cache_time = cached_at
-            if hasattr(cache_time, 'timestamp'):
-                # Firestore timestamp
-                cache_age = datetime.now(timezone.utc) - cache_time.replace(tzinfo=timezone.utc)
-            else:
-                cache_age = timedelta(hours=25)  # Force refresh if can't parse
-            
-            if cache_age < timedelta(hours=24):
-                return {
-                    "bioguide_id": bioguide_id,
-                    "sponsored_count": cached_data.get("sponsored_count", 0),
-                    "cosponsored_count": cached_data.get("cosponsored_count", 0),
-                    "enacted_count": cached_data.get("enacted_count", 0),
-                    "recent_sponsored": cached_data.get("recent_sponsored", []),
-                    "recent_enacted": cached_data.get("recent_enacted", []),
-                    "cached": True,
-                    "cached_at": str(cached_at)
-                }
-    
+
+    now = datetime.now()
+
+    # Check in-memory cache first
+    if not refresh and bioguide_id in cache["legislation_summaries"]:
+        cached = cache["legislation_summaries"][bioguide_id]
+        if cached["expires"] > now:
+            return cached["data"]
+
+    # Check Firestore cache
+    if db and not refresh:
+        cache_ref = db.collection("legislation_cache").document(bioguide_id)
+        cache_doc = cache_ref.get()
+
+        if cache_doc.exists:
+            cached_data = cache_doc.to_dict()
+            cached_at = cached_data.get("cached_at")
+
+            if cached_at:
+                from datetime import timezone
+                cache_time = cached_at
+                if hasattr(cache_time, 'timestamp'):
+                    cache_age = datetime.now(timezone.utc) - cache_time.replace(tzinfo=timezone.utc)
+                else:
+                    cache_age = timedelta(hours=25)
+
+                if cache_age < timedelta(hours=24):
+                    result = {
+                        "bioguide_id": bioguide_id,
+                        "sponsored_count": cached_data.get("sponsored_count", 0),
+                        "cosponsored_count": cached_data.get("cosponsored_count", 0),
+                        "enacted_count": cached_data.get("enacted_count", 0),
+                        "recent_sponsored": cached_data.get("recent_sponsored", []),
+                        "recent_enacted": cached_data.get("recent_enacted", []),
+                        "cached": True,
+                        "cached_at": str(cached_at)
+                    }
+                    # Store in in-memory cache
+                    cache["legislation_summaries"][bioguide_id] = {"data": result, "expires": now + CACHE_DURATION}
+                    return result
+
     # Fetch fresh data from Congress.gov API
     sponsored_count = 0
     cosponsored_count = 0
     enacted_count = 0
     recent_sponsored = []
     recent_enacted = []
-    
+
     async with httpx.AsyncClient() as client:
-        # Get sponsored legislation count and recent bills
         try:
             url = f"{CONGRESS_API_BASE}/member/{bioguide_id}/sponsored-legislation"
             params = {"api_key": CONGRESS_API_KEY, "format": "json", "limit": 250}
-            response = await client.get(url, params=params, timeout=30.0)
-            if response.status_code == 200:
-                data = response.json()
+            resp = await client.get(url, params=params, timeout=30.0)
+            if resp.status_code == 200:
+                data = resp.json()
                 sponsored_count = data.get("pagination", {}).get("count", 0)
                 all_sponsored = data.get("sponsoredLegislation", [])
                 recent_sponsored = all_sponsored[:5]
-                
-                # Count enacted bills (check for "Became Public Law" in latestAction)
+
                 for bill in all_sponsored:
                     latest_action = bill.get("latestAction", {})
                     action_text = latest_action.get("text", "") if latest_action else ""
@@ -542,16 +587,15 @@ async def get_legislation_summary(bioguide_id: str, refresh: bool = False):
                         enacted_count += 1
                         if len(recent_enacted) < 5:
                             recent_enacted.append(bill)
-                
-                # If more than 250 bills, we need to paginate to get accurate enacted count
+
                 total_count = data.get("pagination", {}).get("count", 0)
                 if total_count > 250:
                     offset = 250
                     while offset < total_count:
                         params["offset"] = offset
-                        response = await client.get(url, params=params, timeout=30.0)
-                        if response.status_code == 200:
-                            data = response.json()
+                        resp = await client.get(url, params=params, timeout=30.0)
+                        if resp.status_code == 200:
+                            data = resp.json()
                             for bill in data.get("sponsoredLegislation", []):
                                 latest_action = bill.get("latestAction", {})
                                 action_text = latest_action.get("text", "") if latest_action else ""
@@ -562,32 +606,32 @@ async def get_legislation_summary(bioguide_id: str, refresh: bool = False):
                         offset += 250
         except:
             pass
-        
-        # Get cosponsored legislation count
+
         try:
             url = f"{CONGRESS_API_BASE}/member/{bioguide_id}/cosponsored-legislation"
             params = {"api_key": CONGRESS_API_KEY, "format": "json", "limit": 1}
-            response = await client.get(url, params=params, timeout=30.0)
-            if response.status_code == 200:
-                data = response.json()
+            resp = await client.get(url, params=params, timeout=30.0)
+            if resp.status_code == 200:
+                data = resp.json()
                 cosponsored_count = data.get("pagination", {}).get("count", 0)
         except:
             pass
-    
-    # Cache the results in Firestore
-    from datetime import datetime, timezone
-    cache_data = {
-        "bioguide_id": bioguide_id,
-        "sponsored_count": sponsored_count,
-        "cosponsored_count": cosponsored_count,
-        "enacted_count": enacted_count,
-        "recent_sponsored": recent_sponsored,
-        "recent_enacted": recent_enacted,
-        "cached_at": datetime.now(timezone.utc)
-    }
-    cache_ref.set(cache_data)
-    
-    return {
+
+    # Cache in Firestore
+    if db:
+        from datetime import timezone
+        cache_ref = db.collection("legislation_cache").document(bioguide_id)
+        cache_ref.set({
+            "bioguide_id": bioguide_id,
+            "sponsored_count": sponsored_count,
+            "cosponsored_count": cosponsored_count,
+            "enacted_count": enacted_count,
+            "recent_sponsored": recent_sponsored,
+            "recent_enacted": recent_enacted,
+            "cached_at": datetime.now(timezone.utc)
+        })
+
+    result = {
         "bioguide_id": bioguide_id,
         "sponsored_count": sponsored_count,
         "cosponsored_count": cosponsored_count,
@@ -596,6 +640,8 @@ async def get_legislation_summary(bioguide_id: str, refresh: bool = False):
         "recent_enacted": recent_enacted,
         "cached": False
     }
+    cache["legislation_summaries"][bioguide_id] = {"data": result, "expires": now + CACHE_DURATION}
+    return result
 
 
 # ============ LEGACY ENDPOINTS ============
@@ -666,11 +712,12 @@ YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
 YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3"
 
 @app.get("/api/legislators/{bioguide_id}/youtube-videos")
-async def get_youtube_videos(bioguide_id: str, refresh: bool = False):
+async def get_youtube_videos(bioguide_id: str, response: Response, refresh: bool = False):
     """
     Get recent YouTube videos for a legislator.
     Results are cached in Firestore for 24 hours.
     """
+    response.headers["Cache-Control"] = "public, max-age=3600"
     if not YOUTUBE_API_KEY:
         # In local dev, proxy to production API
         try:
@@ -810,33 +857,69 @@ async def get_youtube_videos(bioguide_id: str, refresh: bool = False):
         return {"videos": [], "bioguide_id": bioguide_id, "error": str(e)}
 
 
+@app.get("/api/youtube-videos/batch")
+async def get_youtube_videos_batch(
+    ids: str = Query(..., description="Comma-separated bioguide IDs"),
+    response: Response = None
+):
+    """
+    Get YouTube videos for multiple legislators in a single request.
+    Returns a dict keyed by bioguide_id.
+    """
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=3600"
+
+    bioguide_ids = [bid.strip() for bid in ids.split(",") if bid.strip()][:20]  # Max 20
+    results = {}
+
+    for bid in bioguide_ids:
+        try:
+            # Reuse the existing single endpoint logic via internal call
+            video_response = Response()
+            video_data = await get_youtube_videos(bid, video_response)
+            results[bid] = video_data
+        except Exception:
+            results[bid] = {"videos": [], "bioguide_id": bid, "error": "Failed to fetch"}
+
+    return results
+
+
 # ============ FIND YOUR REP ENDPOINT ============
 
 @app.get("/api/find-rep")
-async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
+async def find_rep(zip: str = Query(..., min_length=5, max_length=5), response: Response = None):
     """
     Find representatives and senators by zip code using whoismyrepresentative.com API.
     Always returns both senators for the state plus the house representative.
     """
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=86400"
+
+    # Check in-memory cache
+    now = datetime.now()
+    if zip in cache["find_rep"]:
+        cached = cache["find_rep"][zip]
+        if cached["expires"] > now:
+            return cached["data"]
+
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(
+            resp = await client.get(
                 f"https://whoismyrepresentative.com/getall_mems.php?zip={zip}&output=json",
                 timeout=10.0,
                 headers={"User-Agent": "CongressDirectory/1.0"}
             )
-            
-            if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail=f"Failed to fetch representative data: {response.status_code}")
-            
+
+            if resp.status_code != 200:
+                raise HTTPException(status_code=resp.status_code, detail=f"Failed to fetch representative data: {resp.status_code}")
+
             try:
-                data = response.json()
+                data = resp.json()
             except:
-                raise HTTPException(status_code=500, detail=f"Invalid JSON response: {response.text[:200]}")
-            
-            # The API returns {"results": [...]} with name, state, district, etc.
+                raise HTTPException(status_code=500, detail=f"Invalid JSON response: {resp.text[:200]}")
+
             results = data.get("results", [])
-            
+
             if not results:
                 return {
                     "zip": zip,
@@ -844,10 +927,9 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
                     "raw_results": [],
                     "message": "No representatives found for this zip code"
                 }
-            
-            # Get the state from the first result
+
             state = results[0].get("state", "") if results else ""
-            
+
             if not state:
                 return {
                     "zip": zip,
@@ -855,37 +937,30 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
                     "raw_results": results,
                     "message": "Could not determine state from zip code"
                 }
-            
+
+            # Use cached legislators instead of raw Firestore queries
+            all_legislators = get_cached_legislators()
+
             matched = []
             matched_bioguides = set()
-            
-            # First, match representatives from the API response
+
             for rep in results:
                 name = rep.get("name", "")
                 rep_state = rep.get("state", "")
-                
-                # Clean the name - remove "Rep. " or "Sen. " prefix
+
                 clean_name = name.replace("Rep. ", "").replace("Sen. ", "").strip()
-                
-                # Extract last name (usually the last word, but handle suffixes like Jr., III)
                 name_parts = clean_name.split()
                 last_name = name_parts[-1] if name_parts else ""
-                # Handle suffixes
                 if last_name.lower() in ["jr.", "jr", "sr.", "sr", "ii", "iii", "iv"]:
                     last_name = name_parts[-2] if len(name_parts) > 1 else ""
-                
-                # Query legislators by state
-                if USE_LOCAL_DATA:
-                    state_legs = [l for l in LOCAL_DATA.get("legislators", []) if l.get("state", "").upper() == rep_state.upper()]
-                else:
-                    state_legs = [doc.to_dict() for doc in db.collection("legislators").where("state", "==", rep_state).stream()]
+
+                state_legs = [l for l in all_legislators if l.get("state", "").upper() == rep_state.upper()]
 
                 for leg in state_legs:
                     leg_last_name = leg.get("last_name", "").lower()
                     leg_full_name = leg.get("full_name", "").lower()
                     bioguide = leg.get("bioguide_id")
 
-                    # Check if last names match
                     if (last_name.lower() == leg_last_name or last_name.lower() in leg_full_name) and bioguide not in matched_bioguides:
                         matched.append({
                             "bioguide_id": bioguide,
@@ -899,15 +974,11 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
                         matched_bioguides.add(bioguide)
                         break
 
-            # Now ensure we have both senators for the state
-            if USE_LOCAL_DATA:
-                senators = [l for l in LOCAL_DATA.get("legislators", []) if l.get("state", "").upper() == state.upper() and l.get("chamber") == "Senate"]
-            else:
-                senators = [doc.to_dict() for doc in db.collection("legislators").where("state", "==", state).where("chamber", "==", "Senate").stream()]
+            # Ensure both senators for the state
+            senators = [l for l in all_legislators if l.get("state", "").upper() == state.upper() and l.get("chamber") == "Senate"]
 
             for leg in senators:
                 bioguide = leg.get("bioguide_id")
-                
                 if bioguide not in matched_bioguides:
                     matched.append({
                         "bioguide_id": bioguide,
@@ -916,20 +987,21 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5)):
                         "state": leg.get("state"),
                         "chamber": leg.get("chamber"),
                         "district": leg.get("district"),
-                        "api_name": None,  # Not from API, added from database
+                        "api_name": None,
                     })
                     matched_bioguides.add(bioguide)
-            
-            # Sort: Senators first, then Representatives
+
             matched.sort(key=lambda x: (0 if x["chamber"] == "Senate" else 1, x["full_name"]))
-            
-            return {
+
+            result = {
                 "zip": zip,
                 "state": state,
                 "representatives": matched,
                 "raw_results": results
             }
-            
+            cache["find_rep"][zip] = {"data": result, "expires": now + FIND_REP_CACHE_DURATION}
+            return result
+
     except httpx.RequestError as e:
         raise HTTPException(status_code=500, detail=f"API request failed: {str(e)}")
     except HTTPException:

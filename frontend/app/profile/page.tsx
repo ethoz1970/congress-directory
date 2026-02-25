@@ -6,6 +6,7 @@ import { useAuth } from "../../lib/AuthContext";
 import { db } from "../../lib/firebase";
 import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import { useFavorites } from "../../lib/useFavorites";
+import { cachedFetch, CACHE_TTL } from "../../lib/fetchCache";
 import SlideOutPanel from "../components/SlideOutPanel";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://congress-api-370988201370.us-central1.run.app";
@@ -226,34 +227,39 @@ export default function ProfilePage() {
         allNews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setRecentNews(allNews.slice(0, 20));
         
-        // Fetch YouTube videos for favorites with channels
+        // Fetch YouTube videos for favorites with channels using batch endpoint
         const legislatorsWithYouTube = favLegislators.filter(
           (leg) => leg.external_ids?.youtube || leg.external_ids?.youtube_id
         );
-        
+
         if (legislatorsWithYouTube.length > 0) {
           setUpdatesLoading(true);
-          const videoPromises = legislatorsWithYouTube.slice(0, 10).map(async (leg) => {
-            try {
-              const res = await fetch(`${API_URL}/api/legislators/${leg.bioguide_id}/youtube-videos`);
-              if (!res.ok) return [];
-              const data = await res.json();
-              return (data.videos || []).slice(0, 3).map((video: any) => ({
-                ...video,
-                legislator_name: leg.full_name,
-                legislator_id: leg.bioguide_id,
-                party: leg.party,
-              }));
-            } catch {
-              return [];
+          try {
+            const ids = legislatorsWithYouTube.slice(0, 10).map(l => l.bioguide_id).join(",");
+            const batchData = await cachedFetch<Record<string, { videos?: Array<{ video_id: string; title: string; description: string; thumbnail_url: string; published_at: string }> }>>(
+              `${API_URL}/api/youtube-videos/batch?ids=${ids}`,
+              CACHE_TTL.YOUTUBE
+            );
+
+            const allVideos: YouTubeVideo[] = [];
+            for (const leg of legislatorsWithYouTube.slice(0, 10)) {
+              const entry = batchData[leg.bioguide_id];
+              if (entry?.videos) {
+                for (const video of entry.videos.slice(0, 3)) {
+                  allVideos.push({
+                    ...video,
+                    legislator_name: leg.full_name,
+                    legislator_id: leg.bioguide_id,
+                    party: leg.party,
+                  });
+                }
+              }
             }
-          });
-          
-          const videosArrays = await Promise.all(videoPromises);
-          const allVideos = videosArrays.flat();
-          // Sort by published date (newest first)
-          allVideos.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
-          setRecentVideos(allVideos.slice(0, 12));
+            allVideos.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+            setRecentVideos(allVideos.slice(0, 12));
+          } catch {
+            setRecentVideos([]);
+          }
           setUpdatesLoading(false);
         } else {
           setUpdatesLoading(false);
