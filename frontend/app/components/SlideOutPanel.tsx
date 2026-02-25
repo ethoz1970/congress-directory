@@ -303,15 +303,15 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black transition-opacity duration-300 z-40 ${
-          isOpen ? "opacity-50" : "opacity-0 pointer-events-none"
+        className={`fixed inset-0 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 z-40 ${
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={onClose}
       />
 
       {/* Slide-out panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:max-w-2xl bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-[95%] sm:max-w-2xl bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out rounded-l-2xl sm:rounded-none overflow-hidden ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -327,7 +327,16 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
         )}
         
         {/* Top action buttons - fixed position within panel */}
-        <div className="fixed top-4 right-4 sm:absolute flex items-center gap-2 z-[100]">
+        <div className="absolute top-4 left-4 flex items-center gap-2 z-[100]">
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full shadow-lg border border-gray-200 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
           {/* Share Card button */}
           {legislator && (
             <a
@@ -342,19 +351,10 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
               </svg>
             </a>
           )}
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full shadow-lg border border-gray-200 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
 
         {/* Content */}
-        <div className="h-full overflow-y-auto">
+        <div className="h-full overflow-y-auto overflow-x-hidden px-[15%]">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-xl text-gray-500">Loading...</p>
@@ -375,7 +375,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
               }`} />
               
               {/* Header with photo */}
-              <div className="px-4 sm:px-6 pb-4 pt-16">
+              <div className="px-6 sm:px-6 pb-4 pt-16">
                 {/* Mobile: Stack photo and info | Desktop: Side by side */}
                 <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-5">
                   <img
@@ -513,7 +513,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
               </div>
 
               {/* Details */}
-              <div className="px-4 sm:px-6 pb-6 space-y-4 sm:space-y-6">
+              <div className="px-6 pb-6 space-y-4 sm:space-y-6">
 
                 {/* Ideology Score */}
                 {legislator.ideology_score !== undefined && legislator.ideology_score !== null && (
@@ -559,7 +559,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                       Legislative Activity
                     </h3>
 
-                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                       <div className="bg-blue-50 rounded-lg p-2 sm:p-3 text-center">
                         <div className="text-xl sm:text-2xl font-bold text-blue-700">{legislator.sponsored_count || 0}</div>
                         <div className="text-xs text-blue-600">Sponsored</div>
@@ -586,7 +586,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                       </span>
                     </h3>
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                         <div className="text-center">
                           <div className="text-3xl font-bold text-gray-900">{legislator.news_mentions}</div>
                           <div className="text-xs text-gray-500">News Articles</div>

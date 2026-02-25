@@ -1,3 +1,4 @@
+import argparse
 import firebase_admin
 from firebase_admin import credentials, firestore
 import requests
@@ -122,38 +123,45 @@ def extract_legislator_data(legislator, social_lookup):
 
     return data
 
-def import_legislators():
-    """Import all current legislators into Firestore."""
-    
+def import_legislators(clear=False):
+    """Import all current legislators into Firestore.
+
+    Args:
+        clear: If True, delete all existing legislators before importing.
+               If False (default), use merge=True to preserve enriched fields.
+    """
+
     raw_legislators = fetch_legislators()
     social_lookup = fetch_social_media()
-    
+
     # Transform all legislators
     legislators = []
     for leg in raw_legislators:
         legislator_data = extract_legislator_data(leg, social_lookup)
         if legislator_data:
             legislators.append(legislator_data)
-    
+
     senators = [l for l in legislators if l["chamber"] == "Senate"]
     representatives = [l for l in legislators if l["chamber"] == "House"]
-    
+
     print(f"Found {len(senators)} senators and {len(representatives)} representatives")
     print(f"Total: {len(legislators)} legislators")
-    
-    # Clear existing legislators collection
-    print("Clearing existing legislators collection...")
-    existing = db.collection("legislators").stream()
-    for doc in existing:
-        doc.reference.delete()
-    
+
+    # Only clear if explicitly requested
+    if clear:
+        print("Clearing existing legislators collection...")
+        existing = db.collection("legislators").stream()
+        for doc in existing:
+            doc.reference.delete()
+
     # Import legislators
-    print("Importing legislators...")
+    # Use merge=True to preserve enriched fields (ideology, bills, news) when not clearing
+    print(f"Importing legislators (merge={not clear})...")
     for legislator in legislators:
         # Use bioguide_id as document ID for easy lookups
         doc_ref = db.collection("legislators").document(legislator["bioguide_id"])
-        doc_ref.set(legislator)
-    
+        doc_ref.set(legislator, merge=not clear)
+
     print(f"\nSuccessfully imported {len(legislators)} legislators!")
     
     # Print summary by chamber and party
@@ -170,4 +178,8 @@ def import_legislators():
         print(f"  {party}: {count}")
 
 if __name__ == "__main__":
-    import_legislators()
+    parser = argparse.ArgumentParser(description='Import legislators into Firestore')
+    parser.add_argument('--clear', action='store_true',
+                        help='Clear all existing legislators before importing (WARNING: removes enriched data)')
+    args = parser.parse_args()
+    import_legislators(clear=args.clear)

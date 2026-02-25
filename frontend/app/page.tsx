@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, Suspense } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { API_URL } from "../lib/api";
 import SlideOutPanel from "./components/SlideOutPanel";
@@ -237,6 +237,8 @@ function HomeContent() {
     state: false,
   });
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const lastScrollY = useRef(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [zipResults, setZipResults] = useState<Legislator[]>([]);
@@ -316,7 +318,7 @@ function HomeContent() {
     if (!heroVisible || heroPaused) return;
     const timer = setInterval(() => {
       setHeroSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 7000);
+    }, 28000);
     return () => clearInterval(timer);
   }, [heroVisible, heroPaused, heroSlides.length]);
 
@@ -378,9 +380,10 @@ function HomeContent() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [filtersOpen]);
 
-  // Prevent body scroll when filters open
+  // Prevent body scroll when filters open (mobile only)
   useEffect(() => {
-    if (filtersOpen) {
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    if (filtersOpen && !isDesktop) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -389,6 +392,22 @@ function HomeContent() {
       document.body.style.overflow = "";
     };
   }, [filtersOpen]);
+
+  // Auto-collapse header on scroll down, expand on scroll up
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const delta = currentY - lastScrollY.current;
+      if (delta > 50 && currentY > 100) {
+        setHeaderCollapsed(true);
+      } else if (delta < -30) {
+        setHeaderCollapsed(false);
+      }
+      lastScrollY.current = currentY;
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     fetch(`${API_URL}/api/legislators`)
@@ -693,17 +712,17 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Filter slide-out backdrop */}
+      {/* Filter slide-out backdrop (mobile only) */}
       <div
-        className={`fixed inset-0 bg-black transition-opacity duration-300 z-30 ${
+        className={`fixed inset-0 bg-black transition-opacity duration-300 z-30 lg:hidden ${
           filtersOpen ? "opacity-50" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => setFiltersOpen(false)}
       />
 
-      {/* Filter slide-out panel */}
+      {/* Filter slide-out panel (mobile overlay) */}
       <div
-        className={`fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+        className={`fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto lg:hidden ${
           filtersOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -990,30 +1009,37 @@ function HomeContent() {
         </div>
       </div>
 
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-20 bg-gray-50 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      {/* Sticky Header with Hero Slideshow */}
+      <div className={`sticky top-0 z-20 relative bg-gray-900/70 backdrop-blur-md overflow-hidden border-b border-gray-700 transition-transform duration-300 ${headerCollapsed ? '-translate-y-full' : 'translate-y-0'}`}>
+        {/* Slideshow background */}
+        {heroVisible && heroSlides.map((slide, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              heroSlide === index ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <img
+              src={slide.image}
+              alt={slide.title}
+              className="absolute inset-0 w-full h-full object-cover opacity-30"
+            />
+          </div>
+        ))}
+        <div className="absolute inset-0 bg-gray-900/40" />
+
+        {/* Header content */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 py-5">
+          {/* Top row: Logo, Search, User */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Hamburger menu button */}
-              <button
-                onClick={() => setFiltersOpen(true)}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg"
-                aria-label="Open filters"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Poly Sci Fi</h1>
-                <p className="text-gray-600">
-                  {getFilterDescription()} 
-                  <span className="text-gray-400 ml-1">({filteredLegislators.length})</span>
-                </p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">WhoIsOurGov</h1>
+              <p className="text-gray-300 text-sm">
+                {getFilterDescription()}
+                <span className="text-gray-400 ml-1">({filteredLegislators.length})</span>
+              </p>
             </div>
-            
+
             {/* Search field */}
             <div className="flex-1 max-w-md mx-4">
               <div className="relative">
@@ -1022,7 +1048,7 @@ function HomeContent() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by name, party, or state..."
-                  className="w-full px-4 py-2 pl-10 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 pl-10 text-gray-900 bg-white/90 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <svg
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
@@ -1045,182 +1071,335 @@ function HomeContent() {
               </div>
             </div>
 
-            <UserMenu 
+            <UserMenu
               showFavoritesOnly={showFavoritesOnly}
               setShowFavoritesOnly={setShowFavoritesOnly}
               favoritesCount={favorites.size}
             />
           </div>
+
+          {/* Bottom row: Find Your Rep */}
+          <div className="mt-5 pt-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-300 text-sm font-medium">Find Your Rep:</span>
+              <input
+                type="text"
+                placeholder="Zip code"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                onKeyDown={(e) => e.key === "Enter" && findYourRep()}
+                className="w-28 px-3 py-1.5 text-sm text-gray-900 bg-white/90 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button
+                onClick={findYourRep}
+                disabled={zipLoading}
+                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition-colors font-medium"
+              >
+                {zipLoading ? "..." : "Go"}
+              </button>
+              {zipResults.length > 0 && (
+                <button
+                  onClick={() => {
+                    setZipResults([]);
+                    setZipCode("");
+                    setZipError(null);
+                  }}
+                  className="px-2 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {zipError && (
+              <p className="text-sm text-red-400">{zipError}</p>
+            )}
+            {zipResults.length > 0 && (
+              <div className="flex flex-wrap gap-2 sm:ml-4">
+                {zipResults.map((legislator) => (
+                  <button
+                    key={legislator.bioguide_id}
+                    onClick={() => setSelectedLegislator(legislator.bioguide_id)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-lg transition-colors"
+                  >
+                    <img
+                      src={legislator.photo_url || `https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
+                      alt={legislator.full_name}
+                      className="w-6 h-8 object-cover rounded bg-gray-600"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/24x32?text=?";
+                      }}
+                    />
+                    <div className="text-left">
+                      <p className="text-white text-sm font-medium leading-tight">{legislator.full_name}</p>
+                      <p className="text-gray-400 text-xs">
+                        {legislator.chamber === "Senate" ? "Senator" : legislator.chamber === "Governor" ? "Governor" : `Rep. - Dist. ${legislator.district}`}
+                        {" · "}
+                        <span className={
+                          legislator.party === "Republican" ? "text-red-400"
+                          : legislator.party === "Democrat" ? "text-blue-400"
+                          : "text-purple-400"
+                        }>{legislator.party}</span>
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Collapse toggle chevron */}
+        <button
+          onClick={() => setHeaderCollapsed(true)}
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-30 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full p-1 shadow-lg backdrop-blur-sm transition-colors"
+          aria-label="Collapse header"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
       </div>
 
-      {/* Hero Slideshow */}
-      {heroVisible && (
-        <div className="relative bg-gray-900 overflow-hidden">
-          {/* Slides */}
-          <div className="relative h-48 sm:h-64 md:h-80">
-            {heroSlides.map((slide, index) => (
-              <div
-                key={index}
-                className={`absolute inset-0 transition-opacity duration-1000 ${
-                  heroSlide === index ? "opacity-100" : "opacity-0"
-                }`}
-              >
-                <img
-                  src={slide.image}
-                  alt={slide.title}
-                  className="absolute inset-0 w-full h-full object-cover opacity-40"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center px-6 max-w-3xl">
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3">
-                      {slide.title}
-                    </h2>
-                    <p className="text-sm sm:text-base md:text-lg text-gray-200">
-                      {slide.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Peek bar when header is collapsed */}
+      <div
+        className={`fixed top-0 left-0 right-0 z-20 flex justify-center transition-opacity duration-300 ${headerCollapsed ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      >
+        <button
+          onClick={() => setHeaderCollapsed(false)}
+          className="mt-1 bg-gray-800/80 hover:bg-gray-700 text-white rounded-full px-4 py-1 shadow-lg backdrop-blur-sm transition-colors flex items-center gap-1 text-xs"
+          aria-label="Expand header"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+          Show header
+        </button>
+      </div>
 
-          {/* Controls */}
-          <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4">
-            {/* Dots */}
-            <div className="flex gap-2">
-              {heroSlides.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setHeroSlide(index)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    heroSlide === index
-                      ? "bg-white w-6"
-                      : "bg-white/50 hover:bg-white/75"
-                  }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
+      <div className="mx-auto px-4 py-8 -mt-4">
+        <div className="flex gap-6">
 
-            {/* Pause/Play */}
-            <button
-              onClick={() => setHeroPaused(!heroPaused)}
-              className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-              aria-label={heroPaused ? "Play slideshow" : "Pause slideshow"}
-            >
-              {heroPaused ? (
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                </svg>
-              )}
-            </button>
-          </div>
-
-          {/* Close button */}
-          <button
-            onClick={() => setHeroVisible(false)}
-            className="absolute top-3 right-3 p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-            aria-label="Close hero"
-          >
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div>
-          {/* Find Your Rep */}
-          <div className="mb-6 bg-white rounded-lg shadow p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">📍</span>
-                <span className="font-medium text-gray-700">Find Your Rep:</span>
-              </div>
-              <div className="flex flex-1 gap-2">
-                <input
-                  type="text"
-                  placeholder="Enter zip code"
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
-                  onKeyDown={(e) => e.key === "Enter" && findYourRep()}
-                  className="flex-1 sm:flex-none sm:w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
-                />
-                <button
-                  onClick={findYourRep}
-                  disabled={zipLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition-colors font-medium"
-                >
-                  {zipLoading ? "..." : "Go"}
-                </button>
-                {zipResults.length > 0 && (
+          {/* Inline filter panel (desktop) */}
+          {filtersOpen && (
+            <div className="hidden lg:block w-72 flex-shrink-0">
+              <div className="sticky top-28 bg-white rounded-lg shadow p-4 overflow-y-auto max-h-[calc(100vh-8rem)]">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Options</h2>
                   <button
-                    onClick={() => {
-                      setZipResults([]);
-                      setZipCode("");
-                      setZipError(null);
-                    }}
-                    className="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    onClick={() => setFiltersOpen(false)}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
                   >
-                    Clear
+                    ✕
                   </button>
-                )}
-              </div>
-            </div>
-            
-            {zipError && (
-              <p className="mt-2 text-sm text-red-600">{zipError}</p>
-            )}
-            
-            {zipResults.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm text-gray-500 mb-3">Your representatives for zip code {zipCode}:</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {zipResults.map((legislator) => (
-                    <div
-                      key={legislator.bioguide_id}
-                      onClick={() => setSelectedLegislator(legislator.bioguide_id)}
-                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors border border-gray-200"
-                    >
-                      <img
-                        src={legislator.photo_url || `https://bioguide.congress.gov/bioguide/photo/${legislator.bioguide_id.charAt(0)}/${legislator.bioguide_id}.jpg`}
-                        alt={legislator.full_name}
-                        className="w-12 h-16 object-cover rounded bg-gray-200"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "https://via.placeholder.com/48x64?text=?";
-                        }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{legislator.full_name}</p>
-                        <p className="text-sm text-gray-500">
-                          {legislator.chamber === "Senate" ? "Senator" : legislator.chamber === "Governor" ? "Governor" : `Rep. - District ${legislator.district}`}
-                        </p>
-                        <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${
-                          legislator.party === "Republican" 
-                            ? "bg-red-100 text-red-700" 
-                            : legislator.party === "Democrat"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-purple-100 text-purple-700"
-                        }`}>
-                          {legislator.party}
-                        </span>
+                </div>
+
+                {/* SORT BY */}
+                <div className="mb-4">
+                  <button
+                    onClick={() => toggleCollapse('sortSection')}
+                    className="flex items-center justify-between w-full p-3 bg-gray-100 rounded-lg font-semibold text-gray-800 hover:bg-gray-200"
+                  >
+                    <span>Sort By</span>
+                    <span className={`text-gray-500 transition-transform duration-200 ${collapsed.sortSection ? '' : 'rotate-90'}`}>▶</span>
+                  </button>
+                  {!collapsed.sortSection && (
+                    <div className="mt-2 ml-2 space-y-2">
+                      {SORT_OPTIONS.map((option) => (
+                        <button
+                          key={option.key}
+                          onClick={() => {
+                            let newSort = option.key;
+                            let newDir: "asc" | "desc" = "asc";
+                            if (sortBy === option.key) {
+                              newDir = sortDirection === "asc" ? "desc" : "asc";
+                              setSortDirection(newDir);
+                            } else {
+                              setSortBy(newSort);
+                              setSortDirection(newDir);
+                            }
+                            updateURL(filters, newSort, newDir);
+                          }}
+                          className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors ${
+                            sortBy === option.key
+                              ? "bg-blue-100 text-blue-800"
+                              : "hover:bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          <span>{option.label}</span>
+                          {sortBy === option.key && (
+                            <span className="text-blue-600">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* FILTERS */}
+                <div className="mb-4">
+                  <button
+                    onClick={() => toggleCollapse('filtersSection')}
+                    className="flex items-center justify-between w-full p-3 bg-gray-100 rounded-lg font-semibold text-gray-800 hover:bg-gray-200"
+                  >
+                    <span>Filters {hasActiveFilters && `(${filters.chamber.length + filters.party.length + filters.gender.length + filters.state.length + filters.yearsInCongress.length + filters.billsEnacted.length + filters.newsMentions.length})`}</span>
+                    <span className={`text-gray-500 transition-transform duration-200 ${collapsed.filtersSection ? '' : 'rotate-90'}`}>▶</span>
+                  </button>
+                  {!collapsed.filtersSection && (
+                    <div className="mt-2 ml-2">
+                      {hasActiveFilters && (
+                        <button
+                          onClick={clearFilters}
+                          className="text-sm text-blue-600 hover:text-blue-800 mb-4"
+                        >
+                          Clear all filters
+                        </button>
+                      )}
+
+                      {/* Chamber */}
+                      <div className="mb-4">
+                        <button onClick={() => toggleCollapse('chamber')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                          <span>Chamber</span>
+                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.chamber ? '' : 'rotate-90'}`}>▶</span>
+                        </button>
+                        {!collapsed.chamber && (
+                          <div className="space-y-2 ml-2">
+                            {filterOptions.chambers.map((chamber) => (
+                              <label key={chamber} className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={filters.chamber.includes(chamber)} onChange={() => toggleFilter("chamber", chamber)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <span className="text-sm text-gray-700">{chamber}</span>
+                                <span className="text-sm text-gray-400 ml-auto">({chamberCounts[chamber] || 0})</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Party */}
+                      <div className="mb-4">
+                        <button onClick={() => toggleCollapse('party')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                          <span>Party</span>
+                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.party ? '' : 'rotate-90'}`}>▶</span>
+                        </button>
+                        {!collapsed.party && (
+                          <div className="space-y-2 ml-2">
+                            {filterOptions.parties.map((party) => (
+                              <label key={party} className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={filters.party.includes(party)} onChange={() => toggleFilter("party", party)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <span className="text-sm text-gray-700">{party}</span>
+                                <span className="text-sm text-gray-400 ml-auto">({partyCounts[party] || 0})</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bills Enacted */}
+                      <div className="mb-4">
+                        <button onClick={() => toggleCollapse('billsEnacted')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                          <span>Bills Enacted</span>
+                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.billsEnacted ? '' : 'rotate-90'}`}>▶</span>
+                        </button>
+                        {!collapsed.billsEnacted && (
+                          <div className="space-y-2 ml-2">
+                            {BILLS_ENACTED_OPTIONS.map((option) => (
+                              <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={filters.billsEnacted.includes(option.key)} onChange={() => toggleFilter("billsEnacted", option.key)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <span className="text-sm text-gray-700">{option.label}</span>
+                                <span className="text-sm text-gray-400 ml-auto">({billsEnactedCounts[option.key] || 0})</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* News Mentions */}
+                      <div className="mb-4">
+                        <button onClick={() => toggleCollapse('newsMentions')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                          <span>News Mentions</span>
+                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.newsMentions ? '' : 'rotate-90'}`}>▶</span>
+                        </button>
+                        {!collapsed.newsMentions && (
+                          <div className="space-y-2 ml-2">
+                            {NEWS_MENTIONS_OPTIONS.map((option) => (
+                              <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={filters.newsMentions.includes(option.key)} onChange={() => toggleFilter("newsMentions", option.key)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <span className="text-sm text-gray-700">{option.label}</span>
+                                <span className="text-sm text-gray-400 ml-auto">({newsMentionsCounts[option.key] || 0})</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Gender */}
+                      <div className="mb-4">
+                        <button onClick={() => toggleCollapse('gender')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                          <span>Gender</span>
+                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.gender ? '' : 'rotate-90'}`}>▶</span>
+                        </button>
+                        {!collapsed.gender && (
+                          <div className="space-y-2 ml-2">
+                            {filterOptions.genders.map((gender) => (
+                              <label key={gender} className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={filters.gender.includes(gender)} onChange={() => toggleFilter("gender", gender)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <span className="text-sm text-gray-700">{GENDER_LABELS[gender] || gender}</span>
+                                <span className="text-sm text-gray-400 ml-auto">({genderCounts[gender] || 0})</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Years in Congress */}
+                      <div className="mb-4">
+                        <button onClick={() => toggleCollapse('yearsInCongress')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                          <span>Years in Office</span>
+                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.yearsInCongress ? '' : 'rotate-90'}`}>▶</span>
+                        </button>
+                        {!collapsed.yearsInCongress && (
+                          <div className="space-y-2 ml-2">
+                            {YEARS_IN_CONGRESS_OPTIONS.map((option) => (
+                              <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={filters.yearsInCongress.includes(option.key)} onChange={() => toggleFilter("yearsInCongress", option.key)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <span className="text-sm text-gray-700">{option.label}</span>
+                                <span className="text-sm text-gray-400 ml-auto">({yearsCounts[option.key] || 0})</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* State */}
+                      <div className="mb-4">
+                        <button onClick={() => toggleCollapse('state')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                          <span>State</span>
+                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.state ? '' : 'rotate-90'}`}>▶</span>
+                        </button>
+                        {!collapsed.state && (
+                          <div className="space-y-2 max-h-96 overflow-y-auto ml-2">
+                            {filterOptions.states.map((state) => (
+                              <label key={state} className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={filters.state.includes(state)} onChange={() => toggleFilter("state", state)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <span className="text-sm text-gray-700">{STATE_NAMES[state] || state}</span>
+                                <span className="text-sm text-gray-400 ml-auto">({stateCounts[state] || 0})</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Results */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
+            {/* Inline controls */}
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 {/* Mini pie chart */}
@@ -1607,6 +1786,17 @@ function HomeContent() {
         bioguideId={selectedLegislator}
         onClose={() => setSelectedLegislator(null)}
       />
+
+      {/* Floating hamburger button — bottom left */}
+      <button
+        onClick={() => setFiltersOpen(!filtersOpen)}
+        className="fixed bottom-5 right-5 z-30 w-12 h-12 bg-gray-800/90 hover:bg-gray-700 text-white rounded-full shadow-lg backdrop-blur-sm flex items-center justify-center transition-colors"
+        aria-label="Toggle filters"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
     </main>
   );
 }

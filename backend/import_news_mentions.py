@@ -44,11 +44,16 @@ def search_news_mentions(name: str, api_key: str, days: int = 30) -> dict:
     Returns:
         Dict with total_articles count and sample headlines
     """
+    # Strip embedded nicknames in quotes (e.g., 'Earl L. "Buddy" Carter' -> 'Earl L. Carter')
+    import re
+    clean_name = re.sub(r'\s*"[^"]*"\s*', ' ', name).strip()
+    clean_name = re.sub(r'\s+', ' ', clean_name)
+
     # Calculate date range
     from_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%dT00:00:00Z")
-    
+
     params = {
-        "q": f'"{name}"',  # Exact phrase match
+        "q": f'"{clean_name}"',  # Exact phrase match
         "lang": "en",
         "country": "us",
         "from": from_date,
