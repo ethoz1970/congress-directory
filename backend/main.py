@@ -672,6 +672,15 @@ async def get_youtube_videos(bioguide_id: str, refresh: bool = False):
     Results are cached in Firestore for 24 hours.
     """
     if not YOUTUBE_API_KEY:
+        # In local dev, proxy to production API
+        try:
+            async with httpx.AsyncClient() as client:
+                prod_url = f"https://congress-api-370988201370.us-central1.run.app/api/legislators/{bioguide_id}/youtube-videos"
+                resp = await client.get(prod_url, timeout=10.0)
+                if resp.status_code == 200:
+                    return resp.json()
+        except Exception:
+            pass
         return {"videos": [], "error": "YouTube API key not configured"}
     
     # Get legislator to find YouTube channel
