@@ -141,13 +141,13 @@ function getYearsInCongressBucket(firstTermStart?: string): string {
 function getBillsEnactedBuckets(enactedCount?: number): string[] {
   const count = enactedCount || 0;
   const buckets: string[] = [];
-  
+
   // Handle "none" case
   if (count === 0) {
     buckets.push("none");
     return buckets;
   }
-  
+
   // Handle other cases (cumulative)
   for (const option of BILLS_ENACTED_OPTIONS) {
     if (option.key !== "none" && count >= option.min) {
@@ -160,18 +160,18 @@ function getBillsEnactedBuckets(enactedCount?: number): string[] {
 function getNewsMentionsBuckets(newsMentions?: number): string[] {
   const count = newsMentions ?? -1; // Use -1 for undefined/null
   const buckets: string[] = [];
-  
+
   // Handle "zero" case
   if (count === 0) {
     buckets.push("zero");
     return buckets;
   }
-  
+
   // Handle undefined (no data yet)
   if (count < 0) {
     return buckets;
   }
-  
+
   // Handle other cases (cumulative)
   for (const option of NEWS_MENTIONS_OPTIONS) {
     if (option.key !== "zero" && count >= option.min) {
@@ -203,7 +203,7 @@ function HomeContent() {
   const router = useRouter();
   const { user } = useAuth();
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
-  
+
   const [legislators, setLegislators] = useState<Legislator[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -251,28 +251,28 @@ function HomeContent() {
       setZipError("Please enter a valid 5-digit zip code");
       return;
     }
-    
+
     setZipLoading(true);
     setZipError(null);
     setZipResults([]);
-    
+
     try {
       console.log(`Fetching: ${API_URL}/api/find-rep?zip=${zipCode}`);
       const response = await fetch(`${API_URL}/api/find-rep?zip=${zipCode}`);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error("API Error:", response.status, errorText);
         throw new Error(`API error: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log("API Response:", data);
-      
+
       // Match bioguide_ids with our legislators
       const matchedBioguides = data.representatives.map((r: { bioguide_id: string }) => r.bioguide_id);
       const matched = legislators.filter(l => matchedBioguides.includes(l.bioguide_id));
-      
+
       if (matched.length === 0 && data.raw_results?.length > 0) {
         // API returned results but we couldn't match them
         setZipError(`Found ${data.raw_results.length} reps but couldn't match to database`);
@@ -451,35 +451,35 @@ function HomeContent() {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter((legislator) => {
         const nameMatch = legislator.full_name.toLowerCase().includes(query) ||
-                          legislator.first_name.toLowerCase().includes(query) ||
-                          legislator.last_name.toLowerCase().includes(query);
+          legislator.first_name.toLowerCase().includes(query) ||
+          legislator.last_name.toLowerCase().includes(query);
         const partyMatch = legislator.party.toLowerCase().includes(query);
         const stateMatch = legislator.state.toLowerCase().includes(query) ||
-                          (STATE_NAMES[legislator.state] || "").toLowerCase().includes(query);
+          (STATE_NAMES[legislator.state] || "").toLowerCase().includes(query);
         return nameMatch || partyMatch || stateMatch;
       });
 
       // Weight results: name matches first, then party, then state
       filtered.sort((a, b) => {
         const aNameMatch = a.full_name.toLowerCase().includes(query) ||
-                           a.first_name.toLowerCase().includes(query) ||
-                           a.last_name.toLowerCase().includes(query);
+          a.first_name.toLowerCase().includes(query) ||
+          a.last_name.toLowerCase().includes(query);
         const bNameMatch = b.full_name.toLowerCase().includes(query) ||
-                           b.first_name.toLowerCase().includes(query) ||
-                           b.last_name.toLowerCase().includes(query);
-        
+          b.first_name.toLowerCase().includes(query) ||
+          b.last_name.toLowerCase().includes(query);
+
         if (aNameMatch && !bNameMatch) return -1;
         if (!aNameMatch && bNameMatch) return 1;
-        
+
         const aPartyMatch = a.party.toLowerCase().includes(query);
         const bPartyMatch = b.party.toLowerCase().includes(query);
-        
+
         if (aPartyMatch && !bPartyMatch) return -1;
         if (!aPartyMatch && bPartyMatch) return 1;
-        
+
         return 0;
       });
-      
+
       // Skip other sorting when search is active
       return filtered;
     }
@@ -642,28 +642,28 @@ function HomeContent() {
 
   const getFilterDescription = () => {
     if (!hasActiveFilters) return "All Members of Congress";
-    
+
     const parts: string[] = [];
-    
+
     // Gender
     if (filters.gender.length === 1) {
       parts.push(filters.gender[0] === "F" ? "Female" : "Male");
     }
-    
+
     // Party
     if (filters.party.length === 1) {
       parts.push(filters.party[0] === "Democrat" ? "Democratic" : filters.party[0]);
     } else if (filters.party.length > 1) {
       parts.push(filters.party.join(" & "));
     }
-    
+
     // Chamber
     if (filters.chamber.length === 1) {
       parts.push(filters.chamber[0] === "Senate" ? "Senators" : filters.chamber[0] === "Governor" ? "Governors" : "Representatives");
     } else {
       parts.push("Members");
     }
-    
+
     // State
     if (filters.state.length === 1) {
       parts.push(`from ${STATE_NAMES[filters.state[0]] || filters.state[0]}`);
@@ -673,7 +673,7 @@ function HomeContent() {
     } else if (filters.state.length > 3) {
       parts.push(`from ${filters.state.length} states`);
     }
-    
+
     // Years in Congress
     if (filters.yearsInCongress.length === 1) {
       const option = YEARS_IN_CONGRESS_OPTIONS.find(o => o.key === filters.yearsInCongress[0]);
@@ -681,7 +681,7 @@ function HomeContent() {
         parts.push(`with ${option.label.toLowerCase()} in Congress`);
       }
     }
-    
+
     return parts.join(" ") || "Filtered Members";
   };
 
@@ -714,17 +714,15 @@ function HomeContent() {
     <main className="min-h-screen bg-gray-50">
       {/* Filter slide-out backdrop (mobile only) */}
       <div
-        className={`fixed inset-0 bg-black transition-opacity duration-300 z-30 lg:hidden ${
-          filtersOpen ? "opacity-50" : "opacity-0 pointer-events-none"
-        }`}
+        className={`fixed inset-0 bg-black transition-opacity duration-300 z-40 lg:hidden ${filtersOpen ? "opacity-50" : "opacity-0 pointer-events-none"
+          }`}
         onClick={() => setFiltersOpen(false)}
       />
 
       {/* Filter slide-out panel (mobile overlay) */}
       <div
-        className={`fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto lg:hidden ${
-          filtersOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto rounded-l-2xl lg:hidden ${filtersOpen ? "translate-x-0" : "translate-x-full"
+          }`}
       >
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
@@ -739,7 +737,7 @@ function HomeContent() {
 
           {/* SORT BY - Main Collapsible Section */}
           <div className="mb-4">
-            <button 
+            <button
               onClick={() => toggleCollapse('sortSection')}
               className="flex items-center justify-between w-full p-3 bg-gray-100 rounded-lg font-semibold text-gray-800 hover:bg-gray-200"
             >
@@ -763,11 +761,10 @@ function HomeContent() {
                       }
                       updateURL(filters, newSort, newDir);
                     }}
-                    className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors ${
-                      sortBy === option.key
-                        ? "bg-blue-100 text-blue-800"
-                        : "hover:bg-gray-100 text-gray-700"
-                    }`}
+                    className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors ${sortBy === option.key
+                      ? "bg-blue-100 text-blue-800"
+                      : "hover:bg-gray-100 text-gray-700"
+                      }`}
                   >
                     <span>{option.label}</span>
                     {sortBy === option.key && (
@@ -783,7 +780,7 @@ function HomeContent() {
 
           {/* FILTERS - Main Collapsible Section */}
           <div className="mb-4">
-            <button 
+            <button
               onClick={() => toggleCollapse('filtersSection')}
               className="flex items-center justify-between w-full p-3 bg-gray-100 rounded-lg font-semibold text-gray-800 hover:bg-gray-200"
             >
@@ -803,7 +800,7 @@ function HomeContent() {
 
                 {/* Chamber Filter */}
                 <div className="mb-4">
-                  <button 
+                  <button
                     onClick={() => toggleCollapse('chamber')}
                     className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
                   >
@@ -832,7 +829,7 @@ function HomeContent() {
 
                 {/* Party Filter */}
                 <div className="mb-4">
-                  <button 
+                  <button
                     onClick={() => toggleCollapse('party')}
                     className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
                   >
@@ -861,7 +858,7 @@ function HomeContent() {
 
                 {/* Bills Enacted Filter */}
                 <div className="mb-4">
-                  <button 
+                  <button
                     onClick={() => toggleCollapse('billsEnacted')}
                     className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
                   >
@@ -890,7 +887,7 @@ function HomeContent() {
 
                 {/* News Mentions Filter */}
                 <div className="mb-4">
-                  <button 
+                  <button
                     onClick={() => toggleCollapse('newsMentions')}
                     className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
                   >
@@ -919,7 +916,7 @@ function HomeContent() {
 
                 {/* Gender Filter */}
                 <div className="mb-4">
-                  <button 
+                  <button
                     onClick={() => toggleCollapse('gender')}
                     className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
                   >
@@ -948,7 +945,7 @@ function HomeContent() {
 
                 {/* Years in Congress Filter */}
                 <div className="mb-4">
-                  <button 
+                  <button
                     onClick={() => toggleCollapse('yearsInCongress')}
                     className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
                   >
@@ -977,7 +974,7 @@ function HomeContent() {
 
                 {/* State Filter */}
                 <div className="mb-4">
-                  <button 
+                  <button
                     onClick={() => toggleCollapse('state')}
                     className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900"
                   >
@@ -1015,9 +1012,8 @@ function HomeContent() {
         {heroVisible && heroSlides.map((slide, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              heroSlide === index ? "opacity-100" : "opacity-0"
-            }`}
+            className={`absolute inset-0 transition-opacity duration-1000 ${heroSlide === index ? "opacity-100" : "opacity-0"
+              }`}
           >
             <img
               src={slide.image}
@@ -1118,7 +1114,7 @@ function HomeContent() {
                 {zipResults.map((legislator) => (
                   <button
                     key={legislator.bioguide_id}
-                    onClick={() => setSelectedLegislator(legislator.bioguide_id)}
+                    onClick={() => { setFiltersOpen(false); setSelectedLegislator(legislator.bioguide_id); }}
                     className="flex items-center gap-2 px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-lg transition-colors"
                   >
                     <img
@@ -1137,8 +1133,8 @@ function HomeContent() {
                         {" · "}
                         <span className={
                           legislator.party === "Republican" ? "text-red-400"
-                          : legislator.party === "Democrat" ? "text-blue-400"
-                          : "text-purple-400"
+                            : legislator.party === "Democrat" ? "text-blue-400"
+                              : "text-purple-400"
                         }>{legislator.party}</span>
                       </p>
                     </div>
@@ -1178,224 +1174,245 @@ function HomeContent() {
       </div>
 
       <div className="mx-auto px-4 py-8 -mt-4">
-        <div className="flex gap-6">
+        {/* Filter panel (Slide-out from left) */}
+        <>
+          {/* Backdrop overlay */}
+          <div
+            className={`fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 ${filtersOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            onClick={() => setFiltersOpen(false)}
+          />
 
-          {/* Inline filter panel (desktop) */}
-          {filtersOpen && (
-            <div className="hidden lg:block w-72 flex-shrink-0">
-              <div className="sticky top-28 bg-white rounded-lg shadow p-4 overflow-y-auto max-h-[calc(100vh-8rem)]">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Options</h2>
-                  <button
-                    onClick={() => setFiltersOpen(false)}
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
-                  >
-                    ✕
-                  </button>
-                </div>
+          {/* Panel */}
+          <div
+            className={`fixed top-0 left-0 h-full w-80 bg-white/75 backdrop-blur-md shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${filtersOpen ? "translate-x-0" : "-translate-x-full"
+              } overflow-hidden flex flex-col`}
+          >
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex items-center justify-between mb-4 mt-2">
+                <h2 className="text-xl font-bold">Filters & Sorting</h2>
+                <button
+                  onClick={() => setFiltersOpen(false)}
+                  className="p-2 text-gray-700 hover:text-gray-900 hover:bg-black/10 rounded-full transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
-                {/* SORT BY */}
-                <div className="mb-4">
-                  <button
-                    onClick={() => toggleCollapse('sortSection')}
-                    className="flex items-center justify-between w-full p-3 bg-gray-100 rounded-lg font-semibold text-gray-800 hover:bg-gray-200"
-                  >
-                    <span>Sort By</span>
-                    <span className={`text-gray-500 transition-transform duration-200 ${collapsed.sortSection ? '' : 'rotate-90'}`}>▶</span>
-                  </button>
-                  {!collapsed.sortSection && (
-                    <div className="mt-2 ml-2 space-y-2">
-                      {SORT_OPTIONS.map((option) => (
-                        <button
-                          key={option.key}
-                          onClick={() => {
-                            let newSort = option.key;
-                            let newDir: "asc" | "desc" = "asc";
-                            if (sortBy === option.key) {
-                              newDir = sortDirection === "asc" ? "desc" : "asc";
-                              setSortDirection(newDir);
-                            } else {
-                              setSortBy(newSort);
-                              setSortDirection(newDir);
-                            }
-                            updateURL(filters, newSort, newDir);
-                          }}
-                          className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors ${
-                            sortBy === option.key
-                              ? "bg-blue-100 text-blue-800"
-                              : "hover:bg-gray-100 text-gray-700"
+              {/* SORT BY */}
+              <div className="mb-4">
+                <button
+                  onClick={() => toggleCollapse('sortSection')}
+                  className="flex items-center justify-between w-full p-3 bg-white/40 rounded-lg font-semibold text-gray-800 hover:bg-white/60"
+                >
+                  <span>Sort By</span>
+                  <span className={`text-gray-500 transition-transform duration-200 ${collapsed.sortSection ? '' : 'rotate-90'}`}>▶</span>
+                </button>
+                {!collapsed.sortSection && (
+                  <div className="mt-2 ml-2 space-y-2">
+                    {SORT_OPTIONS.map((option) => (
+                      <button
+                        key={option.key}
+                        onClick={() => {
+                          let newSort = option.key;
+                          let newDir: "asc" | "desc" = "asc";
+                          if (sortBy === option.key) {
+                            newDir = sortDirection === "asc" ? "desc" : "asc";
+                            setSortDirection(newDir);
+                          } else {
+                            setSortBy(newSort);
+                            setSortDirection(newDir);
+                          }
+                          updateURL(filters, newSort, newDir);
+                        }}
+                        className={`flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm transition-colors ${sortBy === option.key
+                          ? "bg-blue-100 text-blue-800"
+                          : "hover:bg-gray-100 text-gray-700"
                           }`}
-                        >
-                          <span>{option.label}</span>
-                          {sortBy === option.key && (
-                            <span className="text-blue-600">
-                              {sortDirection === "asc" ? "↑" : "↓"}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                      >
+                        <span>{option.label}</span>
+                        {sortBy === option.key && (
+                          <span className="text-blue-600">
+                            {sortDirection === "asc" ? "↑" : "↓"}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                {/* FILTERS */}
-                <div className="mb-4">
-                  <button
-                    onClick={() => toggleCollapse('filtersSection')}
-                    className="flex items-center justify-between w-full p-3 bg-gray-100 rounded-lg font-semibold text-gray-800 hover:bg-gray-200"
-                  >
-                    <span>Filters {hasActiveFilters && `(${filters.chamber.length + filters.party.length + filters.gender.length + filters.state.length + filters.yearsInCongress.length + filters.billsEnacted.length + filters.newsMentions.length})`}</span>
-                    <span className={`text-gray-500 transition-transform duration-200 ${collapsed.filtersSection ? '' : 'rotate-90'}`}>▶</span>
-                  </button>
-                  {!collapsed.filtersSection && (
-                    <div className="mt-2 ml-2">
-                      {hasActiveFilters && (
-                        <button
-                          onClick={clearFilters}
-                          className="text-sm text-blue-600 hover:text-blue-800 mb-4"
-                        >
-                          Clear all filters
-                        </button>
+              {/* FILTERS */}
+              <div className="mb-4">
+                <button
+                  onClick={() => toggleCollapse('filtersSection')}
+                  className="flex items-center justify-between w-full p-3 bg-white/40 rounded-lg font-semibold text-gray-800 hover:bg-white/60"
+                >
+                  <span>Filters {hasActiveFilters && `(${filters.chamber.length + filters.party.length + filters.gender.length + filters.state.length + filters.yearsInCongress.length + filters.billsEnacted.length + filters.newsMentions.length})`}</span>
+                  <span className={`text-gray-500 transition-transform duration-200 ${collapsed.filtersSection ? '' : 'rotate-90'}`}>▶</span>
+                </button>
+                {!collapsed.filtersSection && (
+                  <div className="mt-2 ml-2 pb-6">
+                    {hasActiveFilters && (
+                      <button
+                        onClick={clearFilters}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-800 mb-4"
+                      >
+                        Clear all filters
+                      </button>
+                    )}
+
+                    {/* Chamber */}
+                    <div className="mb-4">
+                      <button onClick={() => toggleCollapse('chamber')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                        <span>Chamber</span>
+                        <span className={`text-gray-400 transition-transform duration-200 ${collapsed.chamber ? '' : 'rotate-90'}`}>▶</span>
+                      </button>
+                      {!collapsed.chamber && (
+                        <div className="space-y-2 ml-2">
+                          {filterOptions.chambers.map((chamber) => (
+                            <label key={chamber} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={filters.chamber.includes(chamber)} onChange={() => toggleFilter("chamber", chamber)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                              <span className="text-sm text-gray-700">{chamber}</span>
+                              <span className="text-sm text-gray-400 ml-auto">({chamberCounts[chamber] || 0})</span>
+                            </label>
+                          ))}
+                        </div>
                       )}
-
-                      {/* Chamber */}
-                      <div className="mb-4">
-                        <button onClick={() => toggleCollapse('chamber')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
-                          <span>Chamber</span>
-                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.chamber ? '' : 'rotate-90'}`}>▶</span>
-                        </button>
-                        {!collapsed.chamber && (
-                          <div className="space-y-2 ml-2">
-                            {filterOptions.chambers.map((chamber) => (
-                              <label key={chamber} className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={filters.chamber.includes(chamber)} onChange={() => toggleFilter("chamber", chamber)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <span className="text-sm text-gray-700">{chamber}</span>
-                                <span className="text-sm text-gray-400 ml-auto">({chamberCounts[chamber] || 0})</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Party */}
-                      <div className="mb-4">
-                        <button onClick={() => toggleCollapse('party')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
-                          <span>Party</span>
-                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.party ? '' : 'rotate-90'}`}>▶</span>
-                        </button>
-                        {!collapsed.party && (
-                          <div className="space-y-2 ml-2">
-                            {filterOptions.parties.map((party) => (
-                              <label key={party} className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={filters.party.includes(party)} onChange={() => toggleFilter("party", party)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <span className="text-sm text-gray-700">{party}</span>
-                                <span className="text-sm text-gray-400 ml-auto">({partyCounts[party] || 0})</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Bills Enacted */}
-                      <div className="mb-4">
-                        <button onClick={() => toggleCollapse('billsEnacted')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
-                          <span>Bills Enacted</span>
-                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.billsEnacted ? '' : 'rotate-90'}`}>▶</span>
-                        </button>
-                        {!collapsed.billsEnacted && (
-                          <div className="space-y-2 ml-2">
-                            {BILLS_ENACTED_OPTIONS.map((option) => (
-                              <label key={option.key} className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={filters.billsEnacted.includes(option.key)} onChange={() => toggleFilter("billsEnacted", option.key)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <span className="text-sm text-gray-700">{option.label}</span>
-                                <span className="text-sm text-gray-400 ml-auto">({billsEnactedCounts[option.key] || 0})</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* News Mentions */}
-                      <div className="mb-4">
-                        <button onClick={() => toggleCollapse('newsMentions')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
-                          <span>News Mentions</span>
-                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.newsMentions ? '' : 'rotate-90'}`}>▶</span>
-                        </button>
-                        {!collapsed.newsMentions && (
-                          <div className="space-y-2 ml-2">
-                            {NEWS_MENTIONS_OPTIONS.map((option) => (
-                              <label key={option.key} className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={filters.newsMentions.includes(option.key)} onChange={() => toggleFilter("newsMentions", option.key)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <span className="text-sm text-gray-700">{option.label}</span>
-                                <span className="text-sm text-gray-400 ml-auto">({newsMentionsCounts[option.key] || 0})</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Gender */}
-                      <div className="mb-4">
-                        <button onClick={() => toggleCollapse('gender')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
-                          <span>Gender</span>
-                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.gender ? '' : 'rotate-90'}`}>▶</span>
-                        </button>
-                        {!collapsed.gender && (
-                          <div className="space-y-2 ml-2">
-                            {filterOptions.genders.map((gender) => (
-                              <label key={gender} className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={filters.gender.includes(gender)} onChange={() => toggleFilter("gender", gender)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <span className="text-sm text-gray-700">{GENDER_LABELS[gender] || gender}</span>
-                                <span className="text-sm text-gray-400 ml-auto">({genderCounts[gender] || 0})</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Years in Congress */}
-                      <div className="mb-4">
-                        <button onClick={() => toggleCollapse('yearsInCongress')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
-                          <span>Years in Office</span>
-                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.yearsInCongress ? '' : 'rotate-90'}`}>▶</span>
-                        </button>
-                        {!collapsed.yearsInCongress && (
-                          <div className="space-y-2 ml-2">
-                            {YEARS_IN_CONGRESS_OPTIONS.map((option) => (
-                              <label key={option.key} className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={filters.yearsInCongress.includes(option.key)} onChange={() => toggleFilter("yearsInCongress", option.key)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <span className="text-sm text-gray-700">{option.label}</span>
-                                <span className="text-sm text-gray-400 ml-auto">({yearsCounts[option.key] || 0})</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* State */}
-                      <div className="mb-4">
-                        <button onClick={() => toggleCollapse('state')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
-                          <span>State</span>
-                          <span className={`text-gray-400 transition-transform duration-200 ${collapsed.state ? '' : 'rotate-90'}`}>▶</span>
-                        </button>
-                        {!collapsed.state && (
-                          <div className="space-y-2 max-h-96 overflow-y-auto ml-2">
-                            {filterOptions.states.map((state) => (
-                              <label key={state} className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={filters.state.includes(state)} onChange={() => toggleFilter("state", state)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                <span className="text-sm text-gray-700">{STATE_NAMES[state] || state}</span>
-                                <span className="text-sm text-gray-400 ml-auto">({stateCounts[state] || 0})</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
                     </div>
-                  )}
-                </div>
+
+                    {/* Party */}
+                    <div className="mb-4">
+                      <button onClick={() => toggleCollapse('party')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                        <span>Party</span>
+                        <span className={`text-gray-400 transition-transform duration-200 ${collapsed.party ? '' : 'rotate-90'}`}>▶</span>
+                      </button>
+                      {!collapsed.party && (
+                        <div className="space-y-2 ml-2">
+                          {filterOptions.parties.map((party) => (
+                            <label key={party} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={filters.party.includes(party)} onChange={() => toggleFilter("party", party)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                              <span className="text-sm text-gray-700">{party}</span>
+                              <span className="text-sm text-gray-400 ml-auto">({partyCounts[party] || 0})</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bills Enacted */}
+                    <div className="mb-4">
+                      <button onClick={() => toggleCollapse('billsEnacted')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                        <span>Bills Enacted</span>
+                        <span className={`text-gray-400 transition-transform duration-200 ${collapsed.billsEnacted ? '' : 'rotate-90'}`}>▶</span>
+                      </button>
+                      {!collapsed.billsEnacted && (
+                        <div className="space-y-2 ml-2">
+                          {BILLS_ENACTED_OPTIONS.map((option) => (
+                            <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={filters.billsEnacted.includes(option.key)} onChange={() => toggleFilter("billsEnacted", option.key)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                              <span className="text-sm text-gray-700">{option.label}</span>
+                              <span className="text-sm text-gray-400 ml-auto">({billsEnactedCounts[option.key] || 0})</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* News Mentions */}
+                    <div className="mb-4">
+                      <button onClick={() => toggleCollapse('newsMentions')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                        <span>News Mentions</span>
+                        <span className={`text-gray-400 transition-transform duration-200 ${collapsed.newsMentions ? '' : 'rotate-90'}`}>▶</span>
+                      </button>
+                      {!collapsed.newsMentions && (
+                        <div className="space-y-2 ml-2">
+                          {NEWS_MENTIONS_OPTIONS.map((option) => (
+                            <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={filters.newsMentions.includes(option.key)} onChange={() => toggleFilter("newsMentions", option.key)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                              <span className="text-sm text-gray-700">{option.label}</span>
+                              <span className="text-sm text-gray-400 ml-auto">({newsMentionsCounts[option.key] || 0})</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Gender */}
+                    <div className="mb-4">
+                      <button onClick={() => toggleCollapse('gender')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                        <span>Gender</span>
+                        <span className={`text-gray-400 transition-transform duration-200 ${collapsed.gender ? '' : 'rotate-90'}`}>▶</span>
+                      </button>
+                      {!collapsed.gender && (
+                        <div className="space-y-2 ml-2">
+                          {filterOptions.genders.map((gender) => (
+                            <label key={gender} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={filters.gender.includes(gender)} onChange={() => toggleFilter("gender", gender)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                              <span className="text-sm text-gray-700">{GENDER_LABELS[gender] || gender}</span>
+                              <span className="text-sm text-gray-400 ml-auto">({genderCounts[gender] || 0})</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Years in Congress */}
+                    <div className="mb-4">
+                      <button onClick={() => toggleCollapse('yearsInCongress')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                        <span>Years in Office</span>
+                        <span className={`text-gray-400 transition-transform duration-200 ${collapsed.yearsInCongress ? '' : 'rotate-90'}`}>▶</span>
+                      </button>
+                      {!collapsed.yearsInCongress && (
+                        <div className="space-y-2 ml-2">
+                          {YEARS_IN_CONGRESS_OPTIONS.map((option) => (
+                            <label key={option.key} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={filters.yearsInCongress.includes(option.key)} onChange={() => toggleFilter("yearsInCongress", option.key)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                              <span className="text-sm text-gray-700">{option.label}</span>
+                              <span className="text-sm text-gray-400 ml-auto">({yearsCounts[option.key] || 0})</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* State */}
+                    <div className="mb-4">
+                      <button onClick={() => toggleCollapse('state')} className="flex items-center justify-between w-full font-medium text-gray-700 mb-2 hover:text-gray-900">
+                        <span>State</span>
+                        <span className={`text-gray-400 transition-transform duration-200 ${collapsed.state ? '' : 'rotate-90'}`}>▶</span>
+                      </button>
+                      {!collapsed.state && (
+                        <div className="space-y-2 max-h-96 overflow-y-auto ml-2">
+                          {filterOptions.states.map((state) => (
+                            <label key={state} className="flex items-center gap-2 cursor-pointer">
+                              <input type="checkbox" checked={filters.state.includes(state)} onChange={() => toggleFilter("state", state)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                              <span className="text-sm text-gray-700">{STATE_NAMES[state] || state}</span>
+                              <span className="text-sm text-gray-400 ml-auto">({stateCounts[state] || 0})</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+            {/* Panel footer for quick actions if needed, currently empty but provides padding */}
+            <div className="p-4 border-t border-black/10 bg-white/30 backdrop-blur-md flex justify-end">
+              <button
+                onClick={() => setFiltersOpen(false)}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors w-full"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </>
+
+        <div className="flex gap-6">
 
           {/* Results */}
           <div className="flex-1 min-w-0">
@@ -1423,8 +1440,8 @@ function HomeContent() {
                       stroke="#3b82f6"
                       strokeWidth="3"
                       strokeDasharray={`${(filteredLegislators.length / (
-                        filters.chamber.length === 1 
-                          ? legislators.filter(l => l.chamber === filters.chamber[0]).length 
+                        filters.chamber.length === 1
+                          ? legislators.filter(l => l.chamber === filters.chamber[0]).length
                           : legislators.length
                       )) * 100} 100`}
                       strokeLinecap="round"
@@ -1433,8 +1450,8 @@ function HomeContent() {
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-xs font-semibold text-gray-700">
                       {Math.round((filteredLegislators.length / (
-                        filters.chamber.length === 1 
-                          ? legislators.filter(l => l.chamber === filters.chamber[0]).length 
+                        filters.chamber.length === 1
+                          ? legislators.filter(l => l.chamber === filters.chamber[0]).length
                           : legislators.length
                       )) * 100)}%
                     </span>
@@ -1443,8 +1460,8 @@ function HomeContent() {
                 <div>
                   <div className="text-gray-600">
                     <span className="font-medium">{filteredLegislators.length}</span> of {
-                      filters.chamber.length === 1 
-                        ? legislators.filter(l => l.chamber === filters.chamber[0]).length 
+                      filters.chamber.length === 1
+                        ? legislators.filter(l => l.chamber === filters.chamber[0]).length
                         : legislators.length
                     } {
                       filters.chamber.length === 1
@@ -1474,31 +1491,29 @@ function HomeContent() {
                   )}
                 </div>
               </div>
-              
+
               {/* View Toggle */}
               <div className="flex items-center gap-1 bg-white rounded-lg shadow px-1 py-1">
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    viewMode === "list"
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === "list"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
+                    }`}
                 >
                   List
                 </button>
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    viewMode === "grid"
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === "grid"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
+                    }`}
                 >
                   Grid
                 </button>
               </div>
-              
+
               {/* Grid Size Slider */}
               {viewMode === "grid" && (
                 <div className="flex items-center gap-2">
@@ -1547,9 +1562,9 @@ function HomeContent() {
                         </svg>
                       </button>
                     )}
-                    <div 
+                    <div
                       className="flex gap-4"
-                      onClick={() => setSelectedLegislator(legislator.bioguide_id)}
+                      onClick={() => { setFiltersOpen(false); setSelectedLegislator(legislator.bioguide_id); }}
                     >
                       <div className="flex-shrink-0">
                         <img
@@ -1592,13 +1607,12 @@ function HomeContent() {
 
             {/* Grid View */}
             {viewMode === "grid" && (
-              <div className={`grid gap-2 sm:gap-4 ${
-                gridSize === 1 ? "grid-cols-2" :
+              <div className={`grid gap-2 sm:gap-4 ${gridSize === 1 ? "grid-cols-2" :
                 gridSize === 2 ? "grid-cols-3 md:grid-cols-4" :
-                gridSize === 3 ? "grid-cols-4 md:grid-cols-6 lg:grid-cols-8" :
-                gridSize === 4 ? "grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12" :
-                "grid-cols-8 md:grid-cols-10 lg:grid-cols-12"
-              }`}>
+                  gridSize === 3 ? "grid-cols-4 md:grid-cols-6 lg:grid-cols-8" :
+                    gridSize === 4 ? "grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12" :
+                      "grid-cols-8 md:grid-cols-10 lg:grid-cols-12"
+                }`}>
                 {filteredLegislators.map((legislator) => (
                   <div
                     key={legislator.id}
@@ -1614,37 +1628,35 @@ function HomeContent() {
                         (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x400?text=No+Photo";
                       }}
                     />
-                    
+
                     {/* Clickable area for opening panel */}
-                    <div 
+                    <div
                       className="absolute inset-0"
-                      onClick={() => setSelectedLegislator(legislator.bioguide_id)}
+                      onClick={() => { setFiltersOpen(false); setSelectedLegislator(legislator.bioguide_id); }}
                     />
-                    
+
                     {/* News mentions triangle in upper left */}
                     {getNewsTriangleColor(legislator.news_mentions) && (
                       <>
-                        <div 
-                          className={`absolute top-0 left-0 w-0 h-0 border-r-transparent pointer-events-none ${
-                            gridSize === 1 ? "border-t-[60px] border-r-[60px] sm:border-t-[120px] sm:border-r-[120px]" :
+                        <div
+                          className={`absolute top-0 left-0 w-0 h-0 border-r-transparent pointer-events-none ${gridSize === 1 ? "border-t-[60px] border-r-[60px] sm:border-t-[120px] sm:border-r-[120px]" :
                             gridSize === 2 ? "border-t-[40px] border-r-[40px] sm:border-t-[80px] sm:border-r-[80px]" :
-                            gridSize === 3 ? "border-t-[30px] border-r-[30px] sm:border-t-[60px] sm:border-r-[60px]" :
-                            gridSize === 4 ? "border-t-[20px] border-r-[20px] sm:border-t-[40px] sm:border-r-[40px]" :
-                            "border-t-[15px] border-r-[15px] sm:border-t-[30px] sm:border-r-[30px]"
-                          } ${getNewsTriangleColor(legislator.news_mentions)}`}
+                              gridSize === 3 ? "border-t-[30px] border-r-[30px] sm:border-t-[60px] sm:border-r-[60px]" :
+                                gridSize === 4 ? "border-t-[20px] border-r-[20px] sm:border-t-[40px] sm:border-r-[40px]" :
+                                  "border-t-[15px] border-r-[15px] sm:border-t-[30px] sm:border-r-[30px]"
+                            } ${getNewsTriangleColor(legislator.news_mentions)}`}
                         />
-                        <span className={`absolute pointer-events-none text-white font-black drop-shadow-md ${
-                          gridSize === 1 ? "top-1 left-1.5 text-lg sm:top-2 sm:left-3 sm:text-3xl" :
+                        <span className={`absolute pointer-events-none text-white font-black drop-shadow-md ${gridSize === 1 ? "top-1 left-1.5 text-lg sm:top-2 sm:left-3 sm:text-3xl" :
                           gridSize === 2 ? "top-0.5 left-1 text-sm sm:top-1 sm:left-2 sm:text-xl" :
-                          gridSize === 3 ? "top-0.5 left-0.5 text-xs sm:top-1 sm:left-1.5 sm:text-sm" :
-                          gridSize === 4 ? "top-0 left-0.5 text-[6px] sm:top-0.5 sm:left-1 sm:text-xs" :
-                          "top-0 left-0 text-[5px] sm:top-0 sm:left-0.5 sm:text-[8px]"
-                        }`}>
+                            gridSize === 3 ? "top-0.5 left-0.5 text-xs sm:top-1 sm:left-1.5 sm:text-sm" :
+                              gridSize === 4 ? "top-0 left-0.5 text-[6px] sm:top-0.5 sm:left-1 sm:text-xs" :
+                                "top-0 left-0 text-[5px] sm:top-0 sm:left-0.5 sm:text-[8px]"
+                          }`}>
                           {legislator.news_mentions}
                         </span>
                       </>
                     )}
-                    
+
                     {/* Favorite button - middle left */}
                     {user && (
                       <button
@@ -1652,9 +1664,8 @@ function HomeContent() {
                           e.stopPropagation();
                           toggleFavorite(legislator.bioguide_id);
                         }}
-                        className={`absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-black/30 hover:bg-black/50 transition-colors z-10 ${
-                          gridSize >= 4 ? "p-0.5" : "p-1.5"
-                        }`}
+                        className={`absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-black/30 hover:bg-black/50 transition-colors z-10 ${gridSize >= 4 ? "p-0.5" : "p-1.5"
+                          }`}
                         aria-label={isFavorite(legislator.bioguide_id) ? "Remove from favorites" : "Add to favorites"}
                       >
                         <svg
@@ -1670,95 +1681,85 @@ function HomeContent() {
                         </svg>
                       </button>
                     )}
-                    
+
                     {/* Party color triangle in upper right with chamber letter */}
-                    <div 
-                      className={`absolute top-0 right-0 w-0 h-0 border-l-transparent pointer-events-none ${
-                        gridSize === 1 ? "border-t-[60px] border-l-[60px] sm:border-t-[120px] sm:border-l-[120px]" :
+                    <div
+                      className={`absolute top-0 right-0 w-0 h-0 border-l-transparent pointer-events-none ${gridSize === 1 ? "border-t-[60px] border-l-[60px] sm:border-t-[120px] sm:border-l-[120px]" :
                         gridSize === 2 ? "border-t-[40px] border-l-[40px] sm:border-t-[80px] sm:border-l-[80px]" :
-                        gridSize === 3 ? "border-t-[30px] border-l-[30px] sm:border-t-[60px] sm:border-l-[60px]" :
-                        gridSize === 4 ? "border-t-[20px] border-l-[20px] sm:border-t-[40px] sm:border-l-[40px]" :
-                        "border-t-[15px] border-l-[15px] sm:border-t-[30px] sm:border-l-[30px]"
-                      } ${
-                        legislator.party === "Republican" 
-                          ? "border-t-red-600" 
-                          : legislator.party === "Democrat" 
-                            ? "border-t-blue-600" 
+                          gridSize === 3 ? "border-t-[30px] border-l-[30px] sm:border-t-[60px] sm:border-l-[60px]" :
+                            gridSize === 4 ? "border-t-[20px] border-l-[20px] sm:border-t-[40px] sm:border-l-[40px]" :
+                              "border-t-[15px] border-l-[15px] sm:border-t-[30px] sm:border-l-[30px]"
+                        } ${legislator.party === "Republican"
+                          ? "border-t-red-600"
+                          : legislator.party === "Democrat"
+                            ? "border-t-blue-600"
                             : "border-t-purple-600"
-                      }`}
+                        }`}
                     />
-                    <span className={`absolute pointer-events-none text-white font-black ${
-                      gridSize === 1 ? "top-1 right-1.5 text-lg sm:top-2 sm:right-3 sm:text-3xl" :
+                    <span className={`absolute pointer-events-none text-white font-black ${gridSize === 1 ? "top-1 right-1.5 text-lg sm:top-2 sm:right-3 sm:text-3xl" :
                       gridSize === 2 ? "top-0.5 right-1 text-sm sm:top-1 sm:right-2 sm:text-xl" :
-                      gridSize === 3 ? "top-0.5 right-0.5 text-xs sm:top-1 sm:right-1.5 sm:text-sm" :
-                      gridSize === 4 ? "top-0 right-0.5 text-[6px] sm:top-0.5 sm:right-1 sm:text-xs" :
-                      "top-0 right-0 text-[5px] sm:top-0 sm:right-0.5 sm:text-[8px]"
-                    }`}>
+                        gridSize === 3 ? "top-0.5 right-0.5 text-xs sm:top-1 sm:right-1.5 sm:text-sm" :
+                          gridSize === 4 ? "top-0 right-0.5 text-[6px] sm:top-0.5 sm:right-1 sm:text-xs" :
+                            "top-0 right-0 text-[5px] sm:top-0 sm:right-0.5 sm:text-[8px]"
+                      }`}>
                       {legislator.chamber === "Senate" ? "S" : legislator.chamber === "Governor" ? "G" : "R"}
                     </span>
-                    
+
                     {/* Bills enacted triangle in lower right with count */}
                     {getBillsTriangleColor(legislator.enacted_count) && (
                       <>
-                        <div 
-                          className={`absolute bottom-0 right-0 w-0 h-0 border-l-transparent pointer-events-none ${
-                            gridSize === 1 ? "border-b-[60px] border-l-[60px] sm:border-b-[120px] sm:border-l-[120px]" :
+                        <div
+                          className={`absolute bottom-0 right-0 w-0 h-0 border-l-transparent pointer-events-none ${gridSize === 1 ? "border-b-[60px] border-l-[60px] sm:border-b-[120px] sm:border-l-[120px]" :
                             gridSize === 2 ? "border-b-[40px] border-l-[40px] sm:border-b-[80px] sm:border-l-[80px]" :
-                            gridSize === 3 ? "border-b-[30px] border-l-[30px] sm:border-b-[60px] sm:border-l-[60px]" :
-                            gridSize === 4 ? "border-b-[20px] border-l-[20px] sm:border-b-[40px] sm:border-l-[40px]" :
-                            "border-b-[15px] border-l-[15px] sm:border-b-[30px] sm:border-l-[30px]"
-                          } ${getBillsTriangleColor(legislator.enacted_count)}`}
+                              gridSize === 3 ? "border-b-[30px] border-l-[30px] sm:border-b-[60px] sm:border-l-[60px]" :
+                                gridSize === 4 ? "border-b-[20px] border-l-[20px] sm:border-b-[40px] sm:border-l-[40px]" :
+                                  "border-b-[15px] border-l-[15px] sm:border-b-[30px] sm:border-l-[30px]"
+                            } ${getBillsTriangleColor(legislator.enacted_count)}`}
                         />
-                        <span className={`absolute pointer-events-none text-white font-black drop-shadow-md ${
-                          gridSize === 1 ? "bottom-1 right-1.5 text-lg sm:bottom-2 sm:right-3 sm:text-3xl" :
+                        <span className={`absolute pointer-events-none text-white font-black drop-shadow-md ${gridSize === 1 ? "bottom-1 right-1.5 text-lg sm:bottom-2 sm:right-3 sm:text-3xl" :
                           gridSize === 2 ? "bottom-0.5 right-1 text-sm sm:bottom-1 sm:right-2 sm:text-xl" :
-                          gridSize === 3 ? "bottom-0.5 right-0.5 text-xs sm:bottom-1 sm:right-1.5 sm:text-sm" :
-                          gridSize === 4 ? "bottom-0 right-0.5 text-[6px] sm:bottom-0.5 sm:right-1 sm:text-xs" :
-                          "bottom-0 right-0 text-[5px] sm:bottom-0 sm:right-0.5 sm:text-[8px]"
-                        }`}>
+                            gridSize === 3 ? "bottom-0.5 right-0.5 text-xs sm:bottom-1 sm:right-1.5 sm:text-sm" :
+                              gridSize === 4 ? "bottom-0 right-0.5 text-[6px] sm:bottom-0.5 sm:right-1 sm:text-xs" :
+                                "bottom-0 right-0 text-[5px] sm:bottom-0 sm:right-0.5 sm:text-[8px]"
+                          }`}>
                           {legislator.enacted_count}
                         </span>
                       </>
                     )}
-                    
+
                     {/* Ideology indicator in bottom left */}
                     {legislator.ideology_score != null && gridSize <= 2 && (
-                      <div className={`absolute bottom-2 left-2 rounded px-1.5 py-0.5 pointer-events-none ${
-                        legislator.ideology_score < 0.35 
-                          ? "bg-blue-600" 
-                          : legislator.ideology_score > 0.65 
-                            ? "bg-red-600" 
-                            : "bg-purple-600"
-                      }`}>
-                        <span className={`font-bold text-white ${
-                          gridSize === 1 ? "text-xs" : "text-[10px]"
+                      <div className={`absolute bottom-2 left-2 rounded px-1.5 py-0.5 pointer-events-none ${legislator.ideology_score < 0.35
+                        ? "bg-blue-600"
+                        : legislator.ideology_score > 0.65
+                          ? "bg-red-600"
+                          : "bg-purple-600"
                         }`}>
+                        <span className={`font-bold text-white ${gridSize === 1 ? "text-xs" : "text-[10px]"
+                          }`}>
                           {legislator.ideology_score.toFixed(2)}
                         </span>
                       </div>
                     )}
-                    
+
                     {/* Gradient overlay at bottom */}
-                    <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent pointer-events-none ${
-                      gridSize === 1 ? "pt-16 pb-3 px-3" :
+                    <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent pointer-events-none ${gridSize === 1 ? "pt-16 pb-3 px-3" :
                       gridSize === 2 ? "pt-12 pb-2 px-2" :
-                      gridSize === 3 ? "pt-8 pb-1.5 px-1.5" :
-                      gridSize === 4 ? "pt-6 pb-1 px-1" :
-                      "pt-4 pb-0.5 px-0.5"
-                    }`}>
-                      <h3 className={`font-semibold text-white truncate ${
-                        gridSize === 1 ? "text-base" :
+                        gridSize === 3 ? "pt-8 pb-1.5 px-1.5" :
+                          gridSize === 4 ? "pt-6 pb-1 px-1" :
+                            "pt-4 pb-0.5 px-0.5"
+                      }`}>
+                      <h3 className={`font-semibold text-white truncate ${gridSize === 1 ? "text-base" :
                         gridSize === 2 ? "text-sm" :
-                        gridSize === 3 ? "text-xs" :
-                        gridSize === 4 ? "text-[10px]" :
-                        "text-[8px]"
-                      }`}>{legislator.full_name}</h3>
+                          gridSize === 3 ? "text-xs" :
+                            gridSize === 4 ? "text-[10px]" :
+                              "text-[8px]"
+                        }`}>{legislator.full_name}</h3>
                       {gridSize <= 3 && (
-                        <p className={`text-gray-200 truncate ${
-                          gridSize === 1 ? "text-sm" :
+                        <p className={`text-gray-200 truncate ${gridSize === 1 ? "text-sm" :
                           gridSize === 2 ? "text-xs" :
-                          "text-[10px]"
-                        }`}>{STATE_NAMES[legislator.state] || legislator.state}</p>
+                            "text-[10px]"
+                          }`}>{STATE_NAMES[legislator.state] || legislator.state}</p>
                       )}
                     </div>
                   </div>

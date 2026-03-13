@@ -91,11 +91,11 @@ function formatDate(date: Date | null): string {
 
 function getTimeSince(date: Date | null): string {
   if (!date) return "N/A";
-  
+
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     if (diffHours === 0) {
@@ -150,7 +150,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (authLoading) return;
-    
+
     if (!user) {
       router.push("/");
       return;
@@ -159,7 +159,7 @@ export default function ProfilePage() {
     async function fetchProfileData() {
       try {
         setLoading(true);
-        
+
         // Fetch user profile from Firestore
         const userDoc = await getDoc(doc(db, "users", user!.uid));
         if (userDoc.exists()) {
@@ -172,31 +172,15 @@ export default function ProfilePage() {
             photoURL: data.photoURL || user!.photoURL || null,
           });
         }
-        
-        // Fetch all legislators to match with favorites
-        const legislatorsSnapshot = await getDocs(collection(db, "legislators"));
+
+        // Fetch all legislators via API to match with favorites
+        const allLegislatorsArray = await cachedFetch<Legislator[]>(`${API_URL}/api/legislators`);
         const allLegislators: Record<string, Legislator> = {};
-        
-        legislatorsSnapshot.forEach((doc) => {
-          const data = doc.data();
-          allLegislators[data.bioguide_id] = {
-            bioguide_id: data.bioguide_id,
-            full_name: data.full_name,
-            party: data.party,
-            state: data.state,
-            chamber: data.chamber,
-            district: data.district,
-            enacted_count: data.enacted_count,
-            first_term_start: data.first_term_start,
-            birthday: data.birthday,
-            ideology_score: data.ideology_score,
-            news_mentions: data.news_mentions,
-            news_sample_headlines: data.news_sample_headlines,
-            photo_url: data.photo_url,
-            external_ids: data.external_ids,
-          };
+
+        allLegislatorsArray.forEach((data) => {
+          allLegislators[data.bioguide_id] = data;
         });
-        
+
         // Match favorites with legislator data
         const favLegislators: Legislator[] = [];
         favorites.forEach((bioguideId) => {
@@ -204,11 +188,11 @@ export default function ProfilePage() {
             favLegislators.push(allLegislators[bioguideId]);
           }
         });
-        
+
         // Sort by name
         favLegislators.sort((a, b) => a.full_name.localeCompare(b.full_name));
         setFavoriteLegislators(favLegislators);
-        
+
         // Collect news from favorites
         const allNews: NewsItem[] = [];
         favLegislators.forEach((leg) => {
@@ -226,7 +210,7 @@ export default function ProfilePage() {
         // Sort by date (newest first)
         allNews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setRecentNews(allNews.slice(0, 20));
-        
+
         // Fetch YouTube videos for favorites with channels using batch endpoint
         const legislatorsWithYouTube = favLegislators.filter(
           (leg) => leg.external_ids?.youtube || leg.external_ids?.youtube_id
@@ -264,7 +248,7 @@ export default function ProfilePage() {
         } else {
           setUpdatesLoading(false);
         }
-        
+
       } catch (err) {
         console.error("Error fetching profile data:", err);
         setUpdatesLoading(false);
@@ -293,7 +277,7 @@ export default function ProfilePage() {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
       if (diffHours === 0) return "Just now";
@@ -381,13 +365,13 @@ export default function ProfilePage() {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                    <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900">Latest Videos</h3>
               </div>
             </div>
-            
+
             <div className="p-6">
               {updatesLoading ? (
                 <div className="text-center py-8 text-gray-500">Loading videos...</div>
@@ -424,17 +408,16 @@ export default function ProfilePage() {
                           {video.title}
                         </h4>
                         <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span 
+                          <span
                             className="cursor-pointer hover:text-blue-600"
                             onClick={(e) => {
                               e.preventDefault();
                               setSelectedLegislator(video.legislator_id);
                             }}
                           >
-                            <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
-                              video.party === "Republican" ? "bg-red-500" : 
-                              video.party === "Democrat" ? "bg-blue-500" : "bg-purple-500"
-                            }`} />
+                            <span className={`inline-block w-2 h-2 rounded-full mr-1 ${video.party === "Republican" ? "bg-red-500" :
+                                video.party === "Democrat" ? "bg-blue-500" : "bg-purple-500"
+                              }`} />
                             {video.legislator_name}
                           </span>
                           <span>{formatTimeAgo(video.published_at)}</span>
@@ -461,7 +444,7 @@ export default function ProfilePage() {
                 <h3 className="text-xl font-semibold text-gray-900">News Headlines</h3>
               </div>
             </div>
-            
+
             <div className="p-6">
               <div className="space-y-3">
                 {recentNews.map((news, idx) => (
@@ -477,17 +460,16 @@ export default function ProfilePage() {
                     </h4>
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <div className="flex items-center gap-3">
-                        <span 
+                        <span
                           className="cursor-pointer hover:text-blue-600"
                           onClick={(e) => {
                             e.preventDefault();
                             setSelectedLegislator(news.legislator_id);
                           }}
                         >
-                          <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
-                            news.party === "Republican" ? "bg-red-500" : 
-                            news.party === "Democrat" ? "bg-blue-500" : "bg-purple-500"
-                          }`} />
+                          <span className={`inline-block w-2 h-2 rounded-full mr-1 ${news.party === "Republican" ? "bg-red-500" :
+                              news.party === "Democrat" ? "bg-blue-500" : "bg-purple-500"
+                            }`} />
                           {news.legislator_name}
                         </span>
                         <span className="text-gray-400">•</span>
@@ -506,7 +488,7 @@ export default function ProfilePage() {
         <div className="mb-4">
           <h3 className="text-xl font-semibold text-gray-900">My Favorite Members</h3>
         </div>
-        
+
         {favoriteLegislators.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
             <p>You haven't favorited any members yet.</p>
@@ -535,23 +517,21 @@ export default function ProfilePage() {
                     (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x400?text=No+Photo";
                   }}
                 />
-                
+
                 {/* Party color bar at top */}
-                <div className={`absolute top-0 left-0 right-0 h-2 ${
-                  legislator.party === "Republican" 
-                    ? "bg-red-600" 
+                <div className={`absolute top-0 left-0 right-0 h-2 ${legislator.party === "Republican"
+                    ? "bg-red-600"
                     : legislator.party === "Democrat"
                       ? "bg-blue-600"
                       : "bg-purple-600"
-                }`} />
-                
+                  }`} />
+
                 {/* Chamber badge */}
-                <div className={`absolute top-4 right-4 px-2 py-1 rounded text-xs font-bold text-white ${
-                  legislator.chamber === "Senate" ? "bg-amber-600" : legislator.chamber === "Governor" ? "bg-violet-600" : "bg-emerald-600"
-                }`}>
+                <div className={`absolute top-4 right-4 px-2 py-1 rounded text-xs font-bold text-white ${legislator.chamber === "Senate" ? "bg-amber-600" : legislator.chamber === "Governor" ? "bg-violet-600" : "bg-emerald-600"
+                  }`}>
                   {legislator.chamber === "Senate" ? "SEN" : legislator.chamber === "Governor" ? "GOV" : "REP"}
                 </div>
-                
+
                 {/* Favorite button */}
                 <button
                   onClick={(e) => {
@@ -572,10 +552,10 @@ export default function ProfilePage() {
                     />
                   </svg>
                 </button>
-                
+
                 {/* Gradient overlay for text readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                
+
                 {/* Content overlay */}
                 <div className="absolute inset-x-0 bottom-0 p-4 text-white">
                   {/* Name and location */}
@@ -588,7 +568,7 @@ export default function ProfilePage() {
                       ` • District ${legislator.district === 0 ? "At-Large" : legislator.district}`
                     }
                   </p>
-                  
+
                   {/* Stats row */}
                   <div className="grid grid-cols-5 gap-1.5 text-center">
                     <div className="bg-black/40 rounded-lg py-2 px-1">
@@ -607,17 +587,16 @@ export default function ProfilePage() {
                       <div className="text-lg font-bold">{legislator.news_mentions ?? "—"}</div>
                       <div className="text-[10px] text-gray-300 uppercase">News</div>
                     </div>
-                    <div className={`rounded-lg py-2 px-1 ${
-                      legislator.ideology_score === undefined 
+                    <div className={`rounded-lg py-2 px-1 ${legislator.ideology_score === undefined
                         ? "bg-black/40"
-                        : legislator.ideology_score < 0.35 
-                          ? "bg-blue-600/80" 
-                          : legislator.ideology_score > 0.65 
-                            ? "bg-red-600/80" 
+                        : legislator.ideology_score < 0.35
+                          ? "bg-blue-600/80"
+                          : legislator.ideology_score > 0.65
+                            ? "bg-red-600/80"
                             : "bg-purple-600/80"
-                    }`}>
+                      }`}>
                       <div className="text-lg font-bold">
-                        {legislator.ideology_score !== undefined 
+                        {legislator.ideology_score !== undefined
                           ? legislator.ideology_score.toFixed(2)
                           : "—"
                         }
