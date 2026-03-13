@@ -1,10 +1,11 @@
 import os
 import json
 import httpx
-from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi import FastAPI, HTTPException, Query, Response, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth as firebase_auth
 from typing import Optional, List
 from datetime import datetime, timedelta
 
@@ -12,6 +13,23 @@ from datetime import datetime, timedelta
 USE_LOCAL_DATA = os.environ.get("USE_LOCAL_DATA", "").lower() in ("true", "1", "yes")
 
 LOCAL_DATA = {}
+
+# In-memory mock users for local dev mode
+LOCAL_USERS = {
+    "local-dev": {
+        "uid": "local-dev",
+        "email": "dev@local",
+        "displayName": "Local Dev Admin",
+        "role": "admin",
+        "verified": False,
+        "verificationStatus": "none",
+    }
+}
+
+# Admin emails for one-time migration (auto-assign admin role on login)
+ADMIN_EMAILS = [
+    "mario@blackskymedia.org",
+]
 
 if USE_LOCAL_DATA:
     local_data_dir = os.path.join(os.path.dirname(__file__), "local_data")
@@ -38,6 +56,192 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============ AUTH DEPENDENCIES ============
+
+async def get_current_user(request: Request) -> dict:
+    """Verify Firebase ID token and return user profile with role info."""
+    if USE_LOCAL_DATA:
+        # In local dev, return mock user (optionally controlled by header)
+        dev_email = request.headers.get("X-Dev-User-Email")
+        if dev_email:
+            for u in LOCAL_USERS.values():
+                if u["email"] == dev_email:
+                    return u
+            # Create a mock public user for unknown emails
+            return {"uid": f"local-{dev_email}", "email": dev_email, "displayName": dev_email, "role": "public", "verified": False, "verificationStatus": "none"}
+        return LOCAL_USERS["local-dev"]
+
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+
+    token = auth_header[7:]
+    try:
+        decoded = firebase_auth.verify_id_token(token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    uid = decoded["uid"]
+    email = decoded.get("email", "")
+
+    # Fetch user doc from Firestore
+    user_ref = db.collection("users").document(uid)
+    user_doc = user_ref.get()
+
+    if user_doc.exists:
+        user_data = user_doc.to_dict()
+        role = user_data.get("role", "public")
+
+        # One-time migration: auto-assign admin role for known admin emails
+        if role == "public" and email.lower().strip() in [e.lower() for e in ADMIN_EMAILS]:
+            role = "admin"
+            user_ref.set({"role": "admin"}, merge=True)
+
+        return {
+            "uid": uid,
+            "email": email,
+            "displayName": user_data.get("displayName", ""),
+            "photoURL": user_data.get("photoURL"),
+            "role": role,
+            "verified": user_data.get("verified", False),
+            "verificationStatus": user_data.get("verificationStatus", "none"),
+        }
+    else:
+        # User doc doesn't exist yet (race condition, or first API call before frontend writes doc)
+        role = "admin" if email.lower().strip() in [e.lower() for e in ADMIN_EMAILS] else "public"
+        return {
+            "uid": uid,
+            "email": email,
+            "displayName": decoded.get("name", ""),
+            "role": role,
+            "verified": False,
+            "verificationStatus": "none",
+        }
+
+async def get_optional_user(request: Request) -> Optional[dict]:
+    """Like get_current_user but returns None if no token is present."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    try:
+        return await get_current_user(request)
+    except HTTPException:
+        return None
+
+def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
+    """Dependency that ensures the current user has admin role."""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+
+# ============ USER / ADMIN ENDPOINTS ============
+
+class SetRoleRequest(BaseModel):
+    uid: str
+    role: str  # "admin" | "public" | "rep"
+
+@app.get("/api/user/me")
+async def get_user_profile(current_user: dict = Depends(get_current_user)):
+    """Get the current user's profile including role and verification status."""
+    return current_user
+
+@app.get("/api/admin/user-stats")
+async def get_user_stats(admin: dict = Depends(require_admin)):
+    """Get aggregate user statistics by role and verification status."""
+    if USE_LOCAL_DATA:
+        return {
+            "total": len(LOCAL_USERS),
+            "byRole": {"admin": 1, "public": 0, "rep": 0},
+            "verified": 0,
+            "pendingVerifications": 0,
+        }
+
+    users_ref = db.collection("users")
+    docs = users_ref.stream()
+
+    total = 0
+    by_role = {"admin": 0, "public": 0, "rep": 0}
+    verified = 0
+    pending = 0
+
+    for doc in docs:
+        total += 1
+        data = doc.to_dict()
+        role = data.get("role", "public")
+        by_role[role] = by_role.get(role, 0) + 1
+        if data.get("verified"):
+            verified += 1
+        if data.get("verificationStatus") == "pending":
+            pending += 1
+
+    return {
+        "total": total,
+        "byRole": by_role,
+        "verified": verified,
+        "pendingVerifications": pending,
+    }
+
+@app.get("/api/admin/users")
+async def get_admin_users(admin: dict = Depends(require_admin)):
+    """Get all users with role and verification info (admin only)."""
+    if USE_LOCAL_DATA:
+        return list(LOCAL_USERS.values())
+
+    users_ref = db.collection("users")
+    docs = users_ref.stream()
+
+    # Also fetch favorites counts
+    favorites_ref = db.collection("favorites")
+    fav_docs = favorites_ref.stream()
+    favorites_by_user: dict = {}
+    for fdoc in fav_docs:
+        fdata = fdoc.to_dict()
+        uid = fdata.get("userId", "")
+        favorites_by_user[uid] = favorites_by_user.get(uid, 0) + 1
+
+    users_list = []
+    for doc in docs:
+        data = doc.to_dict()
+        created_at = data.get("createdAt")
+        last_login = data.get("lastLogin")
+        users_list.append({
+            "uid": doc.id,
+            "email": data.get("email", ""),
+            "displayName": data.get("displayName", ""),
+            "photoURL": data.get("photoURL"),
+            "role": data.get("role", "public"),
+            "verified": data.get("verified", False),
+            "verificationStatus": data.get("verificationStatus", "none"),
+            "createdAt": str(created_at) if created_at else None,
+            "lastLogin": str(last_login) if last_login else None,
+            "favoritesCount": favorites_by_user.get(doc.id, 0),
+        })
+
+    return users_list
+
+@app.post("/api/admin/set-role")
+async def set_user_role(body: SetRoleRequest, admin: dict = Depends(require_admin)):
+    """Set a user's role (admin only)."""
+    if body.role not in ("admin", "public", "rep"):
+        raise HTTPException(status_code=400, detail="Invalid role. Must be 'admin', 'public', or 'rep'")
+
+    if USE_LOCAL_DATA:
+        if body.uid in LOCAL_USERS:
+            LOCAL_USERS[body.uid]["role"] = body.role
+        else:
+            LOCAL_USERS[body.uid] = {"uid": body.uid, "email": "", "displayName": "", "role": body.role, "verified": False, "verificationStatus": "none"}
+        return {"success": True}
+
+    user_ref = db.collection("users").document(body.uid)
+    user_doc = user_ref.get()
+    if not user_doc.exists:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_ref.set({"role": body.role}, merge=True)
+    return {"success": True}
+
 
 # Congress.gov API configuration
 # Set your API key here or via environment variable

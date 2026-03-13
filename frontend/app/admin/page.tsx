@@ -3,33 +3,32 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../lib/AuthContext";
-import { db } from "../../lib/firebase";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { authenticatedFetch } from "../../lib/api";
 
 interface UserData {
   uid: string;
   email: string;
   displayName: string;
   photoURL: string | null;
-  createdAt: Date | null;
-  lastLogin: Date | null;
+  role: string;
+  verified: boolean;
+  verificationStatus: string;
+  createdAt: string | null;
+  lastLogin: string | null;
   favoritesCount: number;
 }
 
-// List of admin email addresses (lowercase)
-const ADMIN_EMAILS = [
-  "marioguzman1970@gmail.com",
-  "blackskymedia@gmail.com",
-  // Add more admin emails here
-];
-
-function isAdminEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return ADMIN_EMAILS.includes(email.toLowerCase().trim());
+interface UserStats {
+  total: number;
+  byRole: { admin: number; public: number; rep: number };
+  verified: number;
+  pendingVerifications: number;
 }
 
-function formatDate(date: Date | null): string {
-  if (!date) return "N/A";
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "N/A";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "N/A";
   return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -39,13 +38,15 @@ function formatDate(date: Date | null): string {
   });
 }
 
-function getTimeSince(date: Date | null): string {
-  if (!date) return "N/A";
-  
+function getTimeSince(dateStr: string | null): string {
+  if (!dateStr) return "N/A";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "N/A";
+
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     if (diffHours === 0) {
@@ -68,91 +69,87 @@ function getTimeSince(date: Date | null): string {
   }
 }
 
+function roleBadgeClasses(role: string): string {
+  switch (role) {
+    case "admin":
+      return "bg-red-100 text-red-800";
+    case "rep":
+      return "bg-purple-100 text-purple-800";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
+}
+
 export default function AdminDashboard() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<UserData[]>([]);
+  const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [accessChecked, setAccessChecked] = useState(false);
-
-  const userEmail = user?.email || "";
-  const isAdmin = isAdminEmail(userEmail);
+  const [changingRole, setChangingRole] = useState<string | null>(null);
 
   useEffect(() => {
-    // Wait for auth to finish loading
     if (authLoading) return;
-    
-    // If no user, redirect to home
+
     if (!user) {
       router.push("/");
       return;
     }
 
-    // Check admin status
-    const email = user.email || "";
-    const hasAdminAccess = isAdminEmail(email);
-    
-    console.log("Admin check:", { email, hasAdminAccess, ADMIN_EMAILS }); // Debug log
-    
-    if (!hasAdminAccess) {
+    if (!isAdmin) {
       router.push("/");
       return;
     }
-    
+
     setAccessChecked(true);
 
-    async function fetchUsers() {
+    async function fetchData() {
       try {
         setLoading(true);
-        
-        // Fetch all users
-        const usersSnapshot = await getDocs(collection(db, "users"));
-        const usersData: UserData[] = [];
-        
-        // Fetch favorites counts
-        const favoritesSnapshot = await getDocs(collection(db, "favorites"));
-        const favoritesByUser: Record<string, number> = {};
-        
-        favoritesSnapshot.forEach((doc) => {
-          const userId = doc.data().userId;
-          favoritesByUser[userId] = (favoritesByUser[userId] || 0) + 1;
-        });
-        
-        usersSnapshot.forEach((doc) => {
-          const data = doc.data();
-          const createdAt = data.createdAt?.toDate?.() || null;
-          const lastLogin = data.lastLogin?.toDate?.() || null;
-          
-          usersData.push({
-            uid: doc.id,
-            email: data.email || "",
-            displayName: data.displayName || "",
-            photoURL: data.photoURL || null,
-            createdAt,
-            lastLogin,
-            favoritesCount: favoritesByUser[doc.id] || 0,
-          });
-        });
-        
+        const [usersData, statsData] = await Promise.all([
+          authenticatedFetch("/api/admin/users"),
+          authenticatedFetch("/api/admin/user-stats"),
+        ]);
         setUsers(usersData);
+        setStats(statsData);
         setError(null);
       } catch (err) {
-        console.error("Error fetching users:", err);
-        setError("Failed to load users");
+        console.error("Error fetching admin data:", err);
+        setError("Failed to load admin data");
       } finally {
         setLoading(false);
       }
     }
 
-    fetchUsers();
-  }, [user, authLoading, router]);
+    fetchData();
+  }, [user, authLoading, isAdmin, router]);
+
+  const handleSetRole = async (uid: string, newRole: string) => {
+    setChangingRole(uid);
+    try {
+      await authenticatedFetch("/api/admin/set-role", {
+        method: "POST",
+        body: JSON.stringify({ uid, role: newRole }),
+      });
+      // Update local state
+      setUsers(prev => prev.map(u => u.uid === uid ? { ...u, role: newRole } : u));
+      // Refresh stats
+      const statsData = await authenticatedFetch("/api/admin/user-stats");
+      setStats(statsData);
+    } catch (err) {
+      console.error("Error setting role:", err);
+    } finally {
+      setChangingRole(null);
+    }
+  };
 
   const sortedUsers = [...users].sort((a, b) => {
     let comparison = 0;
-    
+
     switch (sortBy) {
       case "name":
         comparison = (a.displayName || "").localeCompare(b.displayName || "");
@@ -160,14 +157,17 @@ export default function AdminDashboard() {
       case "email":
         comparison = a.email.localeCompare(b.email);
         break;
+      case "role":
+        comparison = (a.role || "public").localeCompare(b.role || "public");
+        break;
       case "createdAt":
-        const createdA = a.createdAt?.getTime() || 0;
-        const createdB = b.createdAt?.getTime() || 0;
+        const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         comparison = createdB - createdA;
         break;
       case "lastLogin":
-        const loginA = a.lastLogin?.getTime() || 0;
-        const loginB = b.lastLogin?.getTime() || 0;
+        const loginA = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
+        const loginB = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
         comparison = loginB - loginA;
         break;
       case "favorites":
@@ -176,7 +176,7 @@ export default function AdminDashboard() {
       default:
         comparison = 0;
     }
-    
+
     return sortDirection === "asc" ? -comparison : comparison;
   });
 
@@ -198,14 +198,13 @@ export default function AdminDashboard() {
         {label}
         {sortBy === column && (
           <span className="text-blue-600">
-            {sortDirection === "asc" ? "↑" : "↓"}
+            {sortDirection === "asc" ? "^" : "v"}
           </span>
         )}
       </div>
     </th>
   );
 
-  // Show loading while auth is loading
   if (authLoading) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -214,7 +213,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // Show loading while checking access or fetching data
   if (!accessChecked || loading) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -250,14 +248,14 @@ export default function AdminDashboard() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
               <p className="text-gray-600 mt-1">
-                {users.length} registered user{users.length !== 1 ? "s" : ""}
+                {stats?.total || users.length} registered user{(stats?.total || users.length) !== 1 ? "s" : ""}
               </p>
             </div>
             <button
               onClick={() => router.push("/")}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              ← Back to Directory
+              &larr; Back to Directory
             </button>
           </div>
         </div>
@@ -265,35 +263,30 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm text-gray-500 uppercase">Total Users</p>
-            <p className="text-3xl font-bold text-gray-900">{users.length}</p>
+            <p className="text-3xl font-bold text-gray-900">{stats?.total || 0}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500 uppercase">Total Favorites</p>
-            <p className="text-3xl font-bold text-blue-600">
-              {users.reduce((sum, u) => sum + u.favoritesCount, 0)}
-            </p>
+            <p className="text-sm text-gray-500 uppercase">Public</p>
+            <p className="text-3xl font-bold text-gray-600">{stats?.byRole.public || 0}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500 uppercase">Active Today</p>
-            <p className="text-3xl font-bold text-green-600">
-              {users.filter(u => {
-                if (!u.lastLogin) return false;
-                const today = new Date();
-                return u.lastLogin.toDateString() === today.toDateString();
-              }).length}
-            </p>
+            <p className="text-sm text-gray-500 uppercase">Reps</p>
+            <p className="text-3xl font-bold text-purple-600">{stats?.byRole.rep || 0}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500 uppercase">Avg Favorites/User</p>
-            <p className="text-3xl font-bold text-purple-600">
-              {users.length > 0 
-                ? (users.reduce((sum, u) => sum + u.favoritesCount, 0) / users.length).toFixed(1)
-                : 0
-              }
-            </p>
+            <p className="text-sm text-gray-500 uppercase">Admins</p>
+            <p className="text-3xl font-bold text-red-600">{stats?.byRole.admin || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500 uppercase">Verified</p>
+            <p className="text-3xl font-bold text-green-600">{stats?.verified || 0}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <p className="text-sm text-gray-500 uppercase">Pending</p>
+            <p className="text-3xl font-bold text-amber-600">{stats?.pendingVerifications || 0}</p>
           </div>
         </div>
 
@@ -310,6 +303,7 @@ export default function AdminDashboard() {
                       User
                     </th>
                     <SortHeader column="email" label="Email" />
+                    <SortHeader column="role" label="Role" />
                     <SortHeader column="favorites" label="Favorites" />
                     <SortHeader column="createdAt" label="Signed Up" />
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -318,6 +312,9 @@ export default function AdminDashboard() {
                     <SortHeader column="lastLogin" label="Last Login" />
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Last Active
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -348,6 +345,16 @@ export default function AdminDashboard() {
                         {userData.email}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${roleBadgeClasses(userData.role)}`}>
+                          {userData.role || "public"}
+                        </span>
+                        {userData.verified && (
+                          <span className="ml-1 text-green-500" title="Verified">
+                            &#10003;
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           userData.favoritesCount > 10
                             ? "bg-green-100 text-green-800"
@@ -369,6 +376,18 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {getTimeSince(userData.lastLogin)} ago
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <select
+                          value={userData.role || "public"}
+                          onChange={(e) => handleSetRole(userData.uid, e.target.value)}
+                          disabled={changingRole === userData.uid}
+                          className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                        >
+                          <option value="public">Public</option>
+                          <option value="rep">Rep</option>
+                          <option value="admin">Admin</option>
+                        </select>
                       </td>
                     </tr>
                   ))}

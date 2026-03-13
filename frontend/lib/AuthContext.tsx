@@ -12,10 +12,19 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider, db } from "./firebase";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { API_URL } from "./api";
+
+type UserRole = "admin" | "public" | "rep";
+type VerificationStatus = "none" | "pending" | "approved" | "denied";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  role: UserRole | null;
+  verified: boolean;
+  verificationStatus: VerificationStatus;
+  isAdmin: boolean;
+  refreshProfile: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -27,6 +36,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState<UserRole | null>(null);
+  const [verified, setVerified] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>("none");
+
+  const fetchUserProfile = async (firebaseUser: User) => {
+    try {
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch(`${API_URL}/api/user/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const profile = await res.json();
+        setRole(profile.role || "public");
+        setVerified(profile.verified || false);
+        setVerificationStatus(profile.verificationStatus || "none");
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user) {
+      await fetchUserProfile(user);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -37,11 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const userSnap = await getDoc(userRef);
 
           if (!userSnap.exists()) {
-            // New user - create document
+            // New user - create document with role defaults
             await setDoc(userRef, {
               email: user.email,
               displayName: user.displayName || user.email?.split('@')[0] || "User",
               photoURL: user.photoURL,
+              role: "public",
+              verified: false,
+              verificationStatus: "none",
               createdAt: serverTimestamp(),
               lastLogin: serverTimestamp()
             });
@@ -53,8 +91,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } catch (error) {
           console.error("Error updating user document in Firestore:", error);
-          // We still want to log them in even if the database write fails
         }
+
+        // Fetch role/verification from backend
+        await fetchUserProfile(user);
+      } else {
+        setRole(null);
+        setVerified(false);
+        setVerificationStatus("none");
       }
       setUser(user);
       setLoading(false);
@@ -112,8 +156,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const isAdmin = role === "admin";
+
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signUpWithEmail, signInWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, loading, role, verified, verificationStatus, isAdmin, refreshProfile, signInWithGoogle, signUpWithEmail, signInWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   );

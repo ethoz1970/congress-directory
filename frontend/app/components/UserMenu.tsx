@@ -7,18 +7,6 @@ import { useAuth } from "../../lib/AuthContext";
 import LoginModal from "./LoginModal";
 import UserProfileContent from "./UserProfileContent";
 
-// List of admin email addresses (lowercase)
-const ADMIN_EMAILS = [
-  "marioguzman1970@gmail.com",
-  "blackskymedia@gmail.com",
-  // Add more admin emails here
-];
-
-function isAdminEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return ADMIN_EMAILS.includes(email.toLowerCase().trim());
-}
-
 interface UserMenuProps {
   showFavoritesOnly?: boolean;
   setShowFavoritesOnly?: (value: boolean) => void;
@@ -26,13 +14,11 @@ interface UserMenuProps {
 }
 
 export default function UserMenu({ showFavoritesOnly, setShowFavoritesOnly, favoritesCount = 0 }: UserMenuProps) {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, isAdmin } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
-
-  const isAdmin = isAdminEmail(user?.email);
 
   useEffect(() => {
     setMounted(true);
