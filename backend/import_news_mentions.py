@@ -20,6 +20,10 @@ import time
 import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(Path(__file__).parent / ".env")
 
 # Initialize Firebase
 cred = credentials.Certificate("firebase-credentials.json")
@@ -57,7 +61,7 @@ def search_news_mentions(name: str, api_key: str, days: int = 30) -> dict:
         "lang": "en",
         "country": "us",
         "from": from_date,
-        "max": 10,  # We just need the count, but get a few for samples
+        "max": 10,  # Pro tier max per request
         "apikey": api_key,
     }
     
@@ -69,9 +73,9 @@ def search_news_mentions(name: str, api_key: str, days: int = 30) -> dict:
         total = data.get("totalArticles", 0)
         articles = data.get("articles", [])
         
-        # Extract sample headlines
+        # Extract all returned headlines
         headlines = []
-        for article in articles[:5]:
+        for article in articles:
             headlines.append({
                 "title": article.get("title", ""),
                 "source": article.get("source", {}).get("name", ""),
@@ -96,23 +100,40 @@ def update_legislator_news(bioguide_id: str, news_data: dict):
     doc_ref = db.collection("legislators").document(bioguide_id)
     doc_ref.update({
         "news_mentions": news_data["total_articles"],
-        "news_sample_headlines": news_data["sample_headlines"][:3],
+        "news_sample_headlines": news_data["sample_headlines"],
         "news_updated_at": datetime.now(),
     })
 
 
-def get_legislators_needing_update(limit: int = 100) -> list:
+def get_legislators_needing_update(limit: int = 100, chamber: str = None) -> list:
     """
     Get legislators that need news updates, prioritizing those never updated
     or updated longest ago.
+
+    Args:
+        limit:   Max records to return.
+        chamber: Optional filter — "Governor" for governors only,
+                 "Congress" for Senate+House only, None for all.
     """
     legislators = []
-    
+
     # Get all legislators
     docs = db.collection("legislators").stream()
-    
+
     for doc in docs:
         data = doc.to_dict()
+
+        # Apply chamber filter if specified
+        doc_chamber = data.get("chamber", "")
+        if chamber == "Governor" and doc_chamber != "Governor":
+            continue
+        if chamber == "Congress" and doc_chamber == "Governor":
+            continue
+        if chamber == "Senate" and doc_chamber != "Senate":
+            continue
+        if chamber == "House" and doc_chamber != "House":
+            continue
+
         news_updated = data.get("news_updated_at")
         # Convert Firestore timestamp to datetime if needed
         if news_updated and hasattr(news_updated, 'timestamp'):
@@ -122,7 +143,7 @@ def get_legislators_needing_update(limit: int = 100) -> list:
             "full_name": data.get("full_name", ""),
             "news_updated_at": news_updated,
         })
-    
+
     # Sort: Never updated first, then oldest updates
     def sort_key(l):
         if l["news_updated_at"] is None:
@@ -130,9 +151,9 @@ def get_legislators_needing_update(limit: int = 100) -> list:
         if hasattr(l["news_updated_at"], 'replace'):
             return l["news_updated_at"].replace(tzinfo=None)
         return l["news_updated_at"]
-    
+
     legislators.sort(key=sort_key)
-    
+
     return legislators[:limit]
 
 
@@ -142,6 +163,8 @@ def main():
     parser.add_argument("--limit", type=int, default=100, help="Max members to update (default: 100, max for free tier)")
     parser.add_argument("--days", type=int, default=30, help="Days to search back (default: 30)")
     parser.add_argument("--delay", type=float, default=1.0, help="Delay between requests in seconds (default: 1.0)")
+    parser.add_argument("--chamber", type=str, default=None, choices=["Governor", "Congress", "Senate", "House"],
+                        help="Filter by chamber: 'Governor', 'Senate', 'House', or 'Congress' for Senate+House combined")
     args = parser.parse_args()
     
     # Get API key
@@ -154,14 +177,17 @@ def main():
         sys.exit(1)
     
     print("=" * 60)
-    print("News Mentions Import")
+    chamber_label = f" — {args.chamber} only" if args.chamber else ""
+    print(f"News Mentions Import{chamber_label}")
     print("=" * 60)
     print(f"Search period: Last {args.days} days")
     print(f"Max members to update: {args.limit}")
+    if args.chamber:
+        print(f"Chamber filter: {args.chamber}")
     print()
-    
+
     # Get legislators to update
-    legislators = get_legislators_needing_update(args.limit)
+    legislators = get_legislators_needing_update(args.limit, chamber=args.chamber)
     print(f"Found {len(legislators)} members to update")
     print()
     

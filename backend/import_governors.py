@@ -2,6 +2,10 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import json
 import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(Path(__file__).parent / ".env")
 
 # Initialize Firebase (only if not already initialized)
 try:
@@ -118,12 +122,11 @@ def import_governors(clear_existing=False):
             deleted_count += 1
         print(f"Deleted {deleted_count} existing governor records")
 
-    # Import governors
+    # Import governors — use merge=True to preserve enriched fields (news mentions, photos)
     print("Importing governors...")
     for governor in governors:
-        # Use bioguide_id as document ID for easy lookups
         doc_ref = db.collection("legislators").document(governor["bioguide_id"])
-        doc_ref.set(governor)
+        doc_ref.set(governor, merge=True)
 
     print(f"\nSuccessfully imported {len(governors)} governors!")
 

@@ -21,6 +21,10 @@ import requests
 import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime, timezone, timedelta
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(Path(__file__).parent / ".env")
 
 # Initialize Firebase
 cred = credentials.Certificate("firebase-credentials.json")
@@ -32,7 +36,7 @@ except ValueError:
 db = firestore.client()
 
 # Congress.gov API configuration
-CONGRESS_API_KEY = os.environ.get("CONGRESS_API_KEY", "h1wzKqEKckOfc62GgSCc2NYq6g7iKevWraaXiEaO")
+CONGRESS_API_KEY = os.environ.get("CONGRESS_API_KEY", "")
 CONGRESS_API_BASE = "https://api.congress.gov/v3"
 
 def get_all_legislators():

@@ -1,13 +1,30 @@
 import os
 import json
+import uuid
+import asyncio
+import sys
 import httpx
-from fastapi import FastAPI, HTTPException, Query, Response, Request, Depends
+from fastapi import FastAPI, HTTPException, Query, Response, Request, Depends, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
 from typing import Optional, List
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(Path(__file__).parent / ".env")  # Loads backend/.env when running locally; no-op in production
+
+# Oracle client — talks to oracle-api.blacksky-chat.us. Imported here so
+# env vars are loaded by the time oracle_client.py reads them at module init.
+from oracle_client import (
+    list_bills as oracle_list_bills,
+    get_bill as oracle_get_bill,
+    get_bills_by_sponsor as oracle_get_bills_by_sponsor,
+    configured as oracle_configured,
+)
 
 # Local data mode: set USE_LOCAL_DATA=true to skip Firestore and use exported JSON files
 USE_LOCAL_DATA = os.environ.get("USE_LOCAL_DATA", "").lower() in ("true", "1", "yes")
@@ -472,13 +489,34 @@ def get_legislators(
     return legislators
 
 @app.get("/api/legislators/{bioguide_id}")
-def get_legislator(bioguide_id: str, response: Response):
-    """Get a single legislator by their Bioguide ID. Uses caching."""
+async def get_legislator(bioguide_id: str, response: Response):
+    """
+    Get a single legislator by their Bioguide ID.
+
+    Fans out to the Oracle to attach `recent_bills` — the rep's most
+    recently active sponsored bills, complete with Nia-written
+    plain_english summaries. If the Oracle is unreachable, the
+    response is returned without `recent_bills` (graceful degrade);
+    the existing client fields are never affected.
+    """
     response.headers["Cache-Control"] = "public, max-age=3600"
     legislator = get_cached_legislator(bioguide_id)
 
     if not legislator:
         raise HTTPException(status_code=404, detail="Legislator not found")
+
+    # Oracle fan-out — best-effort enrichment. None means Oracle is
+    # down or the rep has no Oracle row; empty list means rep exists
+    # but has no bills. Either way, the rep card still renders.
+    try:
+        bills = await oracle_get_bills_by_sponsor(bioguide_id, limit=10)
+        if bills:  # non-empty list only
+            # Return a fresh dict so we don't mutate the cached object
+            # in-place (get_cached_legislator hands out shared refs).
+            legislator = {**legislator, "recent_bills": bills}
+    except Exception as e:
+        # Oracle is best-effort. Log and continue.
+        print(f"[oracle] get_bills_by_sponsor({bioguide_id}) failed: {e}")
 
     return legislator
 
@@ -529,6 +567,93 @@ def get_stats(response: Response):
         "by_gender": genders,
         "by_state": states
     }
+
+
+# ============ BILL ENDPOINTS (ORACLE-BACKED) ============
+#
+# These endpoints proxy The Oracle (Blacksky AI data lake) at
+# oracle-api.blacksky-chat.us via the Cloudflare Tunnel. The Oracle is
+# the source of truth for bill enrichment — Nia-written plain_english
+# and impact_summary, portal tags, traction scores. WIOG's own DB
+# stays the source of truth for legislator profiles, favorites, etc.
+#
+# All Oracle calls go through backend/oracle_client.py. If Oracle is
+# unreachable or env vars are unset, these endpoints return 503 with
+# a clear message — the rest of the API keeps working.
+
+@app.get("/api/bills")
+async def get_bills(
+    response: Response,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    sort: str = Query("recent", pattern="^(recent|traction|cosponsors|oldest)$"),
+    chamber: Optional[str] = Query(None, pattern="^(house|senate)$"),
+    status: Optional[str] = None,
+    party: Optional[str] = None,
+    bipartisan: Optional[bool] = None,
+    portal: Optional[str] = None,
+):
+    """
+    Paginated list of bills with sort + filter, proxied from the Oracle.
+
+    sort: 'recent' (last_action_at DESC), 'traction' (traction_score DESC),
+          'cosponsors' (cosponsor_count DESC), 'oldest' (introduced_at ASC).
+    chamber: 'house' or 'senate'.
+    status: 'introduced', 'committee', 'floor', 'passed_one',
+            'passed_both', 'signed', 'vetoed', 'dead'.
+    party: 'Democrat', 'Republican', 'Independent'.
+    bipartisan: true/false.
+    portal: short portal id ('planet', 'money', 'health', etc.) — see
+            feeder/feeder/topics.py for the canonical 12-portal taxonomy.
+
+    Returns the Oracle envelope as-is: {items, total, limit, offset}.
+    """
+    response.headers["Cache-Control"] = "public, max-age=600"
+
+    if not oracle_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Oracle is not configured. Set ORACLE_API_URL and ORACLE_API_KEY."
+        )
+
+    data = await oracle_list_bills(
+        limit=limit,
+        offset=offset,
+        sort=sort,
+        chamber=chamber,
+        status=status,
+        party=party,
+        bipartisan=bipartisan,
+        portal=portal,
+    )
+    if data is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Oracle is unreachable. Try again shortly."
+        )
+    return data
+
+
+@app.get("/api/bills/{external_id}")
+async def get_bill_endpoint(external_id: str, response: Response):
+    """
+    Single bill detail, proxied from the Oracle.
+
+    external_id format: '{congress}-{TYPE}-{number}', e.g. '119-HR-1234'.
+    """
+    response.headers["Cache-Control"] = "public, max-age=600"
+
+    if not oracle_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Oracle is not configured. Set ORACLE_API_URL and ORACLE_API_KEY."
+        )
+
+    bill = await oracle_get_bill(external_id)
+    if bill is None:
+        # Could be 404 or Oracle-down. Caller doesn't need the distinction.
+        raise HTTPException(status_code=404, detail="Bill not found")
+    return bill
 
 
 # ============ COMMITTEE ENDPOINTS ============
@@ -1212,3 +1337,157 @@ async def find_rep(zip: str = Query(..., min_length=5, max_length=5), response: 
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+# ============ DATA IMPORT ENDPOINTS ============
+
+# In-memory job store: job_id -> job state dict
+import_jobs: dict = {}
+
+IMPORT_SCRIPT_MAP = {
+    "legislators": ("import_legislators.py", []),
+    "ideology": ("import_ideology.py", []),
+    "governors": ("import_governors.py", []),
+    "news_senators": ("import_news_mentions.py", ["--chamber", "Senate", "--limit", "100"]),
+    "news_house": ("import_news_mentions.py", ["--chamber", "House", "--limit", "100"]),
+    "news_governors": ("import_news_mentions.py", ["--chamber", "Governor", "--limit", "60"]),
+}
+
+
+async def run_import_script(job_id: str, import_type: str):
+    """Run an import script as a subprocess, capturing stdout/stderr line by line."""
+    script_name, extra_args = IMPORT_SCRIPT_MAP[import_type]
+    script_path = os.path.join(os.path.dirname(__file__), script_name)
+
+    import_jobs[job_id].update({
+        "status": "running",
+        "logs": [],
+        "started_at": datetime.now().isoformat(),
+        "finished_at": None,
+        "error": None,
+    })
+
+    try:
+        process = await asyncio.create_subprocess_exec(
+            sys.executable, "-u", script_path, *extra_args,  # -u = unbuffered stdout, so logs stream in real time
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            cwd=os.path.dirname(script_path),
+            env=os.environ.copy(),  # pass all loaded env vars (including from .env) to subprocess
+        )
+
+        async for raw_line in process.stdout:
+            line = raw_line.decode("utf-8").rstrip()
+            import_jobs[job_id]["logs"].append(line)
+
+        await process.wait()
+
+        if process.returncode == 0:
+            import_jobs[job_id]["status"] = "success"
+        else:
+            import_jobs[job_id]["status"] = "error"
+            import_jobs[job_id]["error"] = f"Process exited with code {process.returncode}"
+
+    except Exception as e:
+        import_jobs[job_id]["status"] = "error"
+        import_jobs[job_id]["error"] = str(e)
+        import_jobs[job_id]["logs"].append(f"ERROR: {e}")
+
+    finally:
+        import_jobs[job_id]["finished_at"] = datetime.now().isoformat()
+
+        # Persist last-run record to Firestore (one doc per import type, overwritten each run)
+        if not USE_LOCAL_DATA and db:
+            try:
+                db.collection("import_history").document(import_type).set({
+                    "type": import_type,
+                    "status": import_jobs[job_id]["status"],
+                    "started_at": import_jobs[job_id]["started_at"],
+                    "finished_at": import_jobs[job_id]["finished_at"],
+                    "error": import_jobs[job_id].get("error"),
+                    "log_lines": len(import_jobs[job_id]["logs"]),
+                })
+            except Exception:
+                pass
+
+
+async def _stream_job_logs(job_id: str):
+    """Async generator that yields Server-Sent Events for a running import job."""
+    last_index = 0
+    elapsed = 0.0
+    timeout = 600.0  # 10-minute hard cap
+
+    # Brief wait for job to be initialised
+    while job_id not in import_jobs and elapsed < 5:
+        await asyncio.sleep(0.1)
+        elapsed += 0.1
+
+    if job_id not in import_jobs:
+        yield f"data: {json.dumps({'error': 'Job not found', 'done': True})}\n\n"
+        return
+
+    while True:
+        job = import_jobs.get(job_id)
+        if not job:
+            break
+
+        # Send any new log lines that have appeared since last check
+        logs = job.get("logs", [])
+        while last_index < len(logs):
+            yield f"data: {json.dumps({'log': logs[last_index]})}\n\n"
+            last_index += 1
+
+        status = job.get("status")
+        if status in ("success", "error"):
+            yield f"data: {json.dumps({'status': status, 'done': True, 'error': job.get('error')})}\n\n"
+            break
+
+        await asyncio.sleep(0.15)
+        elapsed += 0.15
+        if elapsed > timeout:
+            yield f"data: {json.dumps({'error': 'Stream timeout', 'done': True})}\n\n"
+            break
+
+
+@app.post("/api/admin/import/{import_type}")
+async def trigger_import(import_type: str, background_tasks: BackgroundTasks, admin: dict = Depends(require_admin)):
+    """Kick off a data import job in the background. Returns job_id for log streaming."""
+    if import_type not in IMPORT_SCRIPT_MAP:
+        raise HTTPException(status_code=400, detail=f"Unknown import type '{import_type}'. Valid: {list(IMPORT_SCRIPT_MAP)}")
+
+    # Prevent duplicate concurrent runs of the same type
+    for job in import_jobs.values():
+        if job.get("type") == import_type and job.get("status") == "running":
+            raise HTTPException(status_code=409, detail=f"A '{import_type}' import is already running.")
+
+    job_id = str(uuid.uuid4())
+    import_jobs[job_id] = {"type": import_type, "status": "queued"}
+    background_tasks.add_task(run_import_script, job_id, import_type)
+    return {"job_id": job_id, "type": import_type}
+
+
+@app.get("/api/admin/import/{job_id}/stream")
+async def stream_import_logs(job_id: str, admin: dict = Depends(require_admin)):
+    """Stream live import logs for a given job as Server-Sent Events."""
+    return StreamingResponse(
+        _stream_job_logs(job_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+@app.get("/api/admin/import-history")
+async def get_import_history(admin: dict = Depends(require_admin)):
+    """Return the last-run record for each import type."""
+    if USE_LOCAL_DATA:
+        return {t: None for t in IMPORT_SCRIPT_MAP}
+
+    result = {}
+    for import_type in IMPORT_SCRIPT_MAP.keys():
+        doc = db.collection("import_history").document(import_type).get()
+        result[import_type] = doc.to_dict() if doc.exists else None
+    return result

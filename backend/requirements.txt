@@ -4,3 +4,4 @@ firebase-admin
 httpx
 python-dotenv
 gunicorn
+cachetools
