@@ -1,0 +1,13 @@
+# Secrets
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# OS noise
+.DS_Store

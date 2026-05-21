@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { API_URL } from "../lib/api";
 import SlideOutPanel from "./components/SlideOutPanel";
 import UserMenu from "./components/UserMenu";
@@ -1030,6 +1031,17 @@ function HomeContent() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-white">WhoIsOurGov</h1>
+              <div className="flex items-center gap-1 mt-1 mb-1">
+                <span className="px-2 py-0.5 text-xs rounded bg-white/15 text-white font-medium">
+                  Members
+                </span>
+                <Link
+                  href="/bills"
+                  className="px-2 py-0.5 text-xs rounded hover:bg-white/10 text-gray-300 transition-colors"
+                >
+                  Bills
+                </Link>
+              </div>
               <p className="text-gray-300 text-sm">
                 {getFilterDescription()}
                 <span className="text-gray-400 ml-1">({filteredLegislators.length})</span>

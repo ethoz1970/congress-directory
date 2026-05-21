@@ -1,0 +1,79 @@
+# ============================================================
+# WHOISOURGOV — Data Stack
+# Separate from BST and Eternal Ledger. Same Oracle hardware.
+# Ports offset to avoid existing-stack conflicts.
+# Filter Feeder Mode: all ingestion flows through Tier 1 (Mongo)
+# before enrichment to Tier 2 (Postgres) and Tier 3 (Qdrant).
+# ============================================================
+
+services:
+
+  gov_postgres:
+    image: pgvector/pgvector:pg16
+    container_name: gov_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: whoisourgov
+      POSTGRES_USER: blacksky
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - gov_postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blacksky -d whoisourgov"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 1g
+    networks:
+      - gov_net
+
+  gov_mongo:
+    image: mongo:7
+    container_name: gov_mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: blacksky
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: whoisourgov
+    ports:
+      - "27019:27017"
+    volumes:
+      - gov_mongo_data:/data/db
+      - ./docker/mongo/init.js:/docker-entrypoint-initdb.d/init.js
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 1g
+    networks:
+      - gov_net
+
+  gov_qdrant:
+    image: qdrant/qdrant:latest
+    container_name: gov_qdrant
+    restart: always
+    ports:
+      - "6337:6333"
+      - "6338:6334"
+    volumes:
+      - gov_qdrant_data:/qdrant/storage
+      - ./docker/qdrant/config.yaml:/qdrant/config/production.yaml
+    mem_limit: 512m
+    networks:
+      - gov_net
+
+volumes:
+  gov_postgres_data:
+    driver: local
+  gov_mongo_data:
+    driver: local
+  gov_qdrant_data:
+    driver: local
+
+networks:
+  gov_net:
+    driver: bridge

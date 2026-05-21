@@ -1,0 +1,9 @@
+# Secrets — never commit
+.env
+.env.local
+
+# OS noise
+.DS_Store
+
+# Docker leftovers if anyone runs compose from this dir before transfer
+.docker

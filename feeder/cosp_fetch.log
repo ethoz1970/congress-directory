@@ -1,0 +1,513 @@
+→ run fb7cdc6c  task=bill_cosponsors  mode=stale-only  max=all
+→ 12,359 bill(s) need a cosponsor fetch
+  · [    1/12359]  119-HR-452  fetched=    1  rows=    300  errors=0
+  · [   25/12359]  119-HR-51  fetched=   25  rows=   5798  errors=0
+  · [   50/12359]  119-HR-1229  fetched=   50  rows=  10661  errors=0
+  · [   75/12359]  119-HR-3277  fetched=   75  rows=  14794  errors=0
+  · [  100/12359]  119-HR-4797  fetched=  100  rows=  18439  errors=0
+  · [  125/12359]  119-HR-1876  fetched=  125  rows=  21759  errors=0
+  · [  150/12359]  119-HR-45  fetched=  150  rows=  24865  errors=0
+  · [  175/12359]  119-HR-768  fetched=  175  rows=  27707  errors=0
+  · [  200/12359]  119-SRES-585  fetched=  200  rows=  30291  errors=0
+  · [  225/12359]  119-HR-989  fetched=  225  rows=  32693  errors=0
+  · [  250/12359]  119-HR-740  fetched=  250  rows=  34913  errors=0
+  · [  275/12359]  119-HR-6597  fetched=  275  rows=  36982  errors=0
+  · [  300/12359]  119-HR-5599  fetched=  300  rows=  38904  errors=0
+  · [  325/12359]  119-HR-4782  fetched=  325  rows=  40714  errors=0
+  · [  350/12359]  119-HR-563  fetched=  350  rows=  42460  errors=0
+  · [  375/12359]  119-HR-3543  fetched=  375  rows=  44130  errors=0
+  · [  400/12359]  119-S-315  fetched=  400  rows=  45702  errors=0
+  · [  425/12359]  119-HR-609  fetched=  425  rows=  47185  errors=0
+  · [  450/12359]  119-HR-5790  fetched=  450  rows=  48589  errors=0
+  · [  475/12359]  119-HR-1102  fetched=  475  rows=  49967  errors=0
+  ! TimeoutError: retrying after 2.0s
+  ! [  495/12359] 119-HR-4392: IncompleteRead: IncompleteRead(7577 bytes read, 15650 more expected)
+  · [  500/12359]  119-HR-1251  fetched=  499  rows=  51240  errors=1
+  · [  525/12359]  119-HR-2790  fetched=  524  rows=  52506  errors=1
+  · [  550/12359]  119-HR-7033  fetched=  549  rows=  53728  errors=1
+  ! TimeoutError: retrying after 2.0s
+  ! [  567/12359] 119-HR-1002: IncompleteRead: IncompleteRead(7577 bytes read, 13454 more expected)
+  · [  575/12359]  119-HR-318  fetched=  573  rows=  54868  errors=2
+  · [  600/12359]  119-HR-4700  fetched=  598  rows=  56031  errors=2
+  · [  625/12359]  119-HR-5343  fetched=  623  rows=  57161  errors=2
+  ! TimeoutError: retrying after 2.0s
+  ! [  639/12359] 119-HRES-115: IncompleteRead: IncompleteRead(7576 bytes read, 11813 more expected)
+  · [  650/12359]  119-S-9  fetched=  647  rows=  58223  errors=3
+  · [  675/12359]  119-HR-5645  fetched=  672  rows=  59302  errors=3
+  · [  700/12359]  119-HR-4318  fetched=  697  rows=  60356  errors=3
+  · [  725/12359]  119-HR-5940  fetched=  722  rows=  61393  errors=3
+  · [  750/12359]  119-HR-2538  fetched=  747  rows=  62404  errors=3
+  ! TimeoutError: retrying after 2.0s
+  · [  775/12359]  119-HR-4393  fetched=  772  rows=  63388  errors=3
+  · [  800/12359]  119-SRES-434  fetched=  797  rows=  64353  errors=3
+  · [  825/12359]  119-HR-783  fetched=  822  rows=  65297  errors=3
+  · [  850/12359]  119-HR-1488  fetched=  847  rows=  66216  errors=3
+  · [  875/12359]  119-S-2035  fetched=  872  rows=  67109  errors=3
+  · [  900/12359]  119-HR-646  fetched=  897  rows=  67991  errors=3
+  · [  925/12359]  119-HRES-1076  fetched=  922  rows=  68841  errors=3
+  · [  950/12359]  119-S-3147  fetched=  947  rows=  69692  errors=3
+  · [  975/12359]  119-S-3869  fetched=  972  rows=  70517  errors=3
+  · [ 1000/12359]  119-HR-35  fetched=  997  rows=  71336  errors=3
+  · [ 1025/12359]  119-HR-5604  fetched= 1022  rows=  72141  errors=3
+  · [ 1050/12359]  119-SRES-531  fetched= 1047  rows=  72925  errors=3
+  · [ 1075/12359]  119-HR-6091  fetched= 1072  rows=  73706  errors=3
+  · [ 1100/12359]  119-HR-4457  fetched= 1097  rows=  74467  errors=3
+  · [ 1125/12359]  119-S-3938  fetched= 1122  rows=  75220  errors=3
+  · [ 1150/12359]  119-HRES-932  fetched= 1147  rows=  75964  errors=3
+  ! TimeoutError: retrying after 2.0s
+  · [ 1175/12359]  119-HRES-1170  fetched= 1172  rows=  76690  errors=3
+  · [ 1200/12359]  119-S-951  fetched= 1197  rows=  77405  errors=3
+  · [ 1225/12359]  119-HR-2145  fetched= 1222  rows=  78109  errors=3
+  · [ 1250/12359]  119-HR-817  fetched= 1247  rows=  78807  errors=3
+  · [ 1275/12359]  119-S-142  fetched= 1272  rows=  79482  errors=3
+  · [ 1300/12359]  119-HR-4525  fetched= 1297  rows=  80168  errors=3
+  · [ 1325/12359]  119-S-2994  fetched= 1322  rows=  80829  errors=3
+  · [ 1350/12359]  119-HR-1940  fetched= 1347  rows=  81479  errors=3
+  · [ 1375/12359]  119-HR-591  fetched= 1372  rows=  82130  errors=3
+  · [ 1400/12359]  119-S-167  fetched= 1397  rows=  82756  errors=3
+  · [ 1425/12359]  119-HR-3452  fetched= 1422  rows=  83388  errors=3
+  · [ 1450/12359]  119-HR-3623  fetched= 1447  rows=  84005  errors=3
+  · [ 1475/12359]  119-S-1715  fetched= 1472  rows=  84605  errors=3
+  · [ 1500/12359]  119-HR-2484  fetched= 1497  rows=  85206  errors=3
+  · [ 1525/12359]  119-HR-8163  fetched= 1522  rows=  85821  errors=3
+  · [ 1550/12359]  119-HR-6057  fetched= 1547  rows=  86396  errors=3
+  · [ 1575/12359]  119-HR-4032  fetched= 1572  rows=  86976  errors=3
+  · [ 1600/12359]  119-HCONRES-80  fetched= 1597  rows=  87553  errors=3
+  · [ 1625/12359]  119-HRES-470  fetched= 1622  rows=  88123  errors=3
+  · [ 1650/12359]  119-HR-6501  fetched= 1647  rows=  88673  errors=3
+  · [ 1675/12359]  119-HR-4714  fetched= 1672  rows=  89227  errors=3
+  · [ 1700/12359]  119-S-4395  fetched= 1697  rows=  89786  errors=3
+  · [ 1725/12359]  119-HR-4976  fetched= 1722  rows=  90314  errors=3
+  · [ 1750/12359]  119-HR-3006  fetched= 1747  rows=  90841  errors=3
+  · [ 1775/12359]  119-HR-4896  fetched= 1772  rows=  91368  errors=3
+  · [ 1800/12359]  119-HR-8484  fetched= 1797  rows=  91902  errors=3
+  · [ 1825/12359]  119-HR-3429  fetched= 1822  rows=  92402  errors=3
+  · [ 1850/12359]  119-HR-991  fetched= 1847  rows=  92902  errors=3
+  · [ 1875/12359]  119-HR-1656  fetched= 1872  rows=  93403  errors=3
+  · [ 1900/12359]  119-HR-8421  fetched= 1897  rows=  93914  errors=3
+  · [ 1925/12359]  119-HRES-603  fetched= 1922  rows=  94391  errors=3
+  · [ 1950/12359]  119-HR-650  fetched= 1947  rows=  94869  errors=3
+  · [ 1975/12359]  119-HR-835  fetched= 1972  rows=  95347  errors=3
+  · [ 2000/12359]  119-S-3062  fetched= 1997  rows=  95825  errors=3
+  · [ 2025/12359]  119-HR-2243  fetched= 2022  rows=  96282  errors=3
+  · [ 2050/12359]  119-SRES-269  fetched= 2047  rows=  96732  errors=3
+  · [ 2075/12359]  119-HR-679  fetched= 2072  rows=  97183  errors=3
+  · [ 2100/12359]  119-HR-1304  fetched= 2097  rows=  97634  errors=3
+  · [ 2125/12359]  119-S-1454  fetched= 2122  rows=  98087  errors=3
+  · [ 2150/12359]  119-HR-3993  fetched= 2147  rows=  98532  errors=3
+  · [ 2175/12359]  119-S-2076  fetched= 2172  rows=  98957  errors=3
+  · [ 2200/12359]  119-HR-3733  fetched= 2197  rows=  99383  errors=3
+  · [ 2225/12359]  119-HR-7421  fetched= 2222  rows=  99809  errors=3
+  · [ 2250/12359]  119-HR-3170  fetched= 2247  rows= 100234  errors=3
+  · [ 2275/12359]  119-S-1879  fetched= 2272  rows= 100662  errors=3
+  · [ 2300/12359]  119-HR-4986  fetched= 2297  rows= 101068  errors=3
+  · [ 2325/12359]  119-SJRES-77  fetched= 2322  rows= 101475  errors=3
+  · [ 2350/12359]  119-SRES-50  fetched= 2347  rows= 101875  errors=3
+  · [ 2375/12359]  119-HR-3285  fetched= 2372  rows= 102278  errors=3
+  · [ 2400/12359]  119-HJRES-96  fetched= 2397  rows= 102683  errors=3
+  · [ 2425/12359]  119-S-92  fetched= 2422  rows= 103081  errors=3
+  ! TimeoutError: retrying after 2.0s
+  · [ 2450/12359]  119-HR-162  fetched= 2447  rows= 103456  errors=3
+  · [ 2475/12359]  119-S-2983  fetched= 2472  rows= 103831  errors=3
+  · [ 2500/12359]  119-SRES-597  fetched= 2497  rows= 104208  errors=3
+  · [ 2525/12359]  119-HR-4147  fetched= 2522  rows= 104589  errors=3
+  ! TimeoutError: retrying after 2.0s
+  · [ 2550/12359]  119-HR-5452  fetched= 2547  rows= 104966  errors=3
+  · [ 2575/12359]  119-HRES-403  fetched= 2572  rows= 105341  errors=3
+  ! TimeoutError: retrying after 2.0s
+  · [ 2600/12359]  119-HR-5518  fetched= 2597  rows= 105691  errors=3
+  · [ 2625/12359]  119-HRES-386  fetched= 2622  rows= 106041  errors=3
+  · [ 2650/12359]  119-HR-7057  fetched= 2647  rows= 106391  errors=3
+  · [ 2675/12359]  119-HR-1351  fetched= 2672  rows= 106741  errors=3
+  · [ 2700/12359]  119-HR-935  fetched= 2697  rows= 107096  errors=3
+  · [ 2725/12359]  119-HJRES-136  fetched= 2722  rows= 107450  errors=3
+  · [ 2750/12359]  119-HR-7809  fetched= 2747  rows= 107807  errors=3
+  · [ 2775/12359]  119-S-2180  fetched= 2772  rows= 108132  errors=3
+  · [ 2800/12359]  119-HJRES-71  fetched= 2797  rows= 108457  errors=3
+  · [ 2825/12359]  119-HJRES-74  fetched= 2822  rows= 108783  errors=3
+  · [ 2850/12359]  119-HR-861  fetched= 2847  rows= 109108  errors=3
+  · [ 2875/12359]  119-HR-2673  fetched= 2872  rows= 109435  errors=3
+  · [ 2900/12359]  119-S-921  fetched= 2897  rows= 109761  errors=3
+  · [ 2925/12359]  119-HR-5641  fetched= 2922  rows= 110091  errors=3
+  · [ 2950/12359]  119-HR-3011  fetched= 2947  rows= 110423  errors=3
+  · [ 2975/12359]  119-HR-2065  fetched= 2972  rows= 110740  errors=3
+  · [ 3000/12359]  119-HR-4162  fetched= 2997  rows= 111040  errors=3
+  · [ 3025/12359]  119-HR-5596  fetched= 3022  rows= 111340  errors=3
+  · [ 3050/12359]  119-HR-4255  fetched= 3047  rows= 111642  errors=3
+  · [ 3075/12359]  119-HR-6646  fetched= 3072  rows= 111943  errors=3
+  · [ 3100/12359]  119-HR-7749  fetched= 3097  rows= 112243  errors=3
+  · [ 3125/12359]  119-HR-6509  fetched= 3122  rows= 112548  errors=3
+  · [ 3150/12359]  119-S-4111  fetched= 3147  rows= 112851  errors=3
+  · [ 3175/12359]  119-HR-6830  fetched= 3172  rows= 113159  errors=3
+  · [ 3200/12359]  119-HR-1259  fetched= 3197  rows= 113448  errors=3
+  · [ 3225/12359]  119-HR-4497  fetched= 3222  rows= 113723  errors=3
+  · [ 3250/12359]  119-HRES-223  fetched= 3247  rows= 113998  errors=3
+  · [ 3275/12359]  119-HR-499  fetched= 3272  rows= 114273  errors=3
+  · [ 3300/12359]  119-HR-744  fetched= 3297  rows= 114548  errors=3
+  · [ 3325/12359]  119-HR-1222  fetched= 3322  rows= 114823  errors=3
+  · [ 3350/12359]  119-HR-7318  fetched= 3347  rows= 115098  errors=3
+  · [ 3375/12359]  119-HR-2046  fetched= 3372  rows= 115376  errors=3
+  · [ 3400/12359]  119-HR-8108  fetched= 3397  rows= 115651  errors=3
+  · [ 3425/12359]  119-HR-1873  fetched= 3422  rows= 115930  errors=3
+  · [ 3450/12359]  119-HR-3150  fetched= 3447  rows= 116181  errors=3
+  · [ 3475/12359]  119-HR-2197  fetched= 3472  rows= 116431  errors=3
+  · [ 3500/12359]  119-HR-2794  fetched= 3497  rows= 116681  errors=3
+  · [ 3525/12359]  119-HR-4387  fetched= 3522  rows= 116931  errors=3
+  ! TimeoutError: retrying after 2.0s
+  · [ 3550/12359]  119-S-2423  fetched= 3547  rows= 117182  errors=3
+  · [ 3575/12359]  119-HR-3783  fetched= 3572  rows= 117434  errors=3
+  · [ 3600/12359]  119-HR-1513  fetched= 3597  rows= 117684  errors=3
+  · [ 3625/12359]  119-HRES-1129  fetched= 3622  rows= 117935  errors=3
+  · [ 3650/12359]  119-HR-6317  fetched= 3647  rows= 118186  errors=3
+  · [ 3675/12359]  119-HRES-1173  fetched= 3672  rows= 118438  errors=3
+  · [ 3700/12359]  119-S-4127  fetched= 3697  rows= 118697  errors=3
+  · [ 3725/12359]  119-S-1749  fetched= 3722  rows= 118927  errors=3
+  · [ 3750/12359]  119-HRES-506  fetched= 3747  rows= 119155  errors=3
+  · [ 3775/12359]  119-HR-4613  fetched= 3772  rows= 119380  errors=3
+  · [ 3800/12359]  119-HR-3158  fetched= 3797  rows= 119605  errors=3
+  · [ 3825/12359]  119-HR-135  fetched= 3822  rows= 119833  errors=3
+  · [ 3850/12359]  119-S-2071  fetched= 3847  rows= 120059  errors=3
+  · [ 3875/12359]  119-HJRES-32  fetched= 3872  rows= 120284  errors=3
+  · [ 3900/12359]  119-HR-3089  fetched= 3897  rows= 120510  errors=3
+  · [ 3925/12359]  119-HR-1881  fetched= 3922  rows= 120737  errors=3
+  · [ 3950/12359]  119-HR-5284  fetched= 3947  rows= 120964  errors=3
+  · [ 3975/12359]  119-S-1003  fetched= 3972  rows= 121193  errors=3
+  · [ 4000/12359]  119-S-3145  fetched= 3997  rows= 121423  errors=3
+  · [ 4025/12359]  119-HR-5560  fetched= 4022  rows= 121655  errors=3
+  · [ 4050/12359]  119-S-129  fetched= 4047  rows= 121857  errors=3
+  · [ 4075/12359]  119-HR-3136  fetched= 4072  rows= 122061  errors=3
+  · [ 4100/12359]  119-HR-243  fetched= 4097  rows= 122261  errors=3
+  · [ 4125/12359]  119-S-3142  fetched= 4122  rows= 122462  errors=3
+  · [ 4150/12359]  119-S-1375  fetched= 4147  rows= 122663  errors=3
+  · [ 4175/12359]  119-HR-863  fetched= 4172  rows= 122863  errors=3
+  · [ 4200/12359]  119-HR-6490  fetched= 4197  rows= 123065  errors=3
+  · [ 4225/12359]  119-SRES-39  fetched= 4222  rows= 123265  errors=3
+  · [ 4250/12359]  119-SRES-547  fetched= 4247  rows= 123465  errors=3
+  · [ 4275/12359]  119-HR-7659  fetched= 4272  rows= 123665  errors=3
+  · [ 4300/12359]  119-S-2121  fetched= 4297  rows= 123868  errors=3
+  · [ 4325/12359]  119-HR-5225  fetched= 4322  rows= 124069  errors=3
+  · [ 4350/12359]  119-S-263  fetched= 4347  rows= 124274  errors=3
+  · [ 4375/12359]  119-HR-7409  fetched= 4372  rows= 124476  errors=3
+  · [ 4400/12359]  119-S-4477  fetched= 4397  rows= 124682  errors=3
+  · [ 4425/12359]  119-HRES-224  fetched= 4422  rows= 124879  errors=3
+  · [ 4450/12359]  119-HR-733  fetched= 4447  rows= 125054  errors=3
+  · [ 4475/12359]  119-S-2686  fetched= 4472  rows= 125229  errors=3
+  · [ 4500/12359]  119-HRES-826  fetched= 4497  rows= 125404  errors=3
+  · [ 4525/12359]  119-HR-4832  fetched= 4522  rows= 125579  errors=3
+  · [ 4550/12359]  119-HRES-848  fetched= 4547  rows= 125755  errors=3
+  · [ 4575/12359]  119-S-767  fetched= 4572  rows= 125930  errors=3
+  · [ 4600/12359]  119-S-3603  fetched= 4597  rows= 126106  errors=3
+  · [ 4625/12359]  119-HR-5768  fetched= 4622  rows= 126284  errors=3
+  · [ 4650/12359]  119-S-1284  fetched= 4647  rows= 126459  errors=3
+  · [ 4675/12359]  119-S-3953  fetched= 4672  rows= 126634  errors=3
+  · [ 4700/12359]  119-HR-390  fetched= 4697  rows= 126809  errors=3
+  · [ 4725/12359]  119-SRES-140  fetched= 4722  rows= 126984  errors=3
+  · [ 4750/12359]  119-HR-7534  fetched= 4747  rows= 127160  errors=3
+  · [ 4775/12359]  119-HR-7336  fetched= 4772  rows= 127339  errors=3
+  · [ 4800/12359]  119-HR-7986  fetched= 4797  rows= 127517  errors=3
+  · [ 4825/12359]  119-S-1020  fetched= 4822  rows= 127694  errors=3
+  · [ 4850/12359]  119-HR-6143  fetched= 4847  rows= 127869  errors=3
+  · [ 4875/12359]  119-HRES-271  fetched= 4872  rows= 128044  errors=3
+  · [ 4900/12359]  119-SJRES-53  fetched= 4897  rows= 128194  errors=3
+  · [ 4925/12359]  119-HR-4200  fetched= 4922  rows= 128344  errors=3
+  · [ 4950/12359]  119-HR-4411  fetched= 4947  rows= 128494  errors=3
+  · [ 4975/12359]  119-HR-4233  fetched= 4972  rows= 128644  errors=3
+  · [ 5000/12359]  119-HR-2279  fetched= 4997  rows= 128794  errors=3
+  · [ 5025/12359]  119-S-1948  fetched= 5022  rows= 128945  errors=3
+  · [ 5050/12359]  119-S-1649  fetched= 5047  rows= 129095  errors=3
+  · [ 5075/12359]  119-HR-4110  fetched= 5072  rows= 129245  errors=3
+  · [ 5100/12359]  119-S-2312  fetched= 5097  rows= 129395  errors=3
+  · [ 5125/12359]  119-S-1302  fetched= 5122  rows= 129545  errors=3
+  · [ 5150/12359]  119-HR-7631  fetched= 5147  rows= 129696  errors=3
+  · [ 5175/12359]  119-HR-5526  fetched= 5172  rows= 129847  errors=3
+  · [ 5200/12359]  119-S-3429  fetched= 5197  rows= 129997  errors=3
+  · [ 5225/12359]  119-S-2948  fetched= 5222  rows= 130147  errors=3
+  · [ 5250/12359]  119-S-2327  fetched= 5247  rows= 130299  errors=3
+  · [ 5275/12359]  119-HR-44  fetched= 5272  rows= 130449  errors=3
+  · [ 5300/12359]  119-HR-3508  fetched= 5297  rows= 130600  errors=3
+  · [ 5325/12359]  119-HR-8330  fetched= 5322  rows= 130752  errors=3
+  · [ 5350/12359]  119-HR-8496  fetched= 5347  rows= 130905  errors=3
+  · [ 5375/12359]  119-HRES-29  fetched= 5372  rows= 131058  errors=3
+  · [ 5400/12359]  119-HRES-307  fetched= 5397  rows= 131183  errors=3
+  · [ 5425/12359]  119-HR-2288  fetched= 5422  rows= 131309  errors=3
+  · [ 5450/12359]  119-HR-4573  fetched= 5447  rows= 131434  errors=3
+  · [ 5475/12359]  119-HR-5016  fetched= 5472  rows= 131559  errors=3
+  · [ 5500/12359]  119-HR-3681  fetched= 5497  rows= 131684  errors=3
+  · [ 5525/12359]  119-S-2127  fetched= 5522  rows= 131809  errors=3
+  · [ 5550/12359]  119-SRES-31  fetched= 5547  rows= 131934  errors=3
+  · [ 5575/12359]  119-S-3020  fetched= 5572  rows= 132059  errors=3
+  · [ 5600/12359]  119-HR-2630  fetched= 5597  rows= 132184  errors=3
+  · [ 5625/12359]  119-HR-5995  fetched= 5622  rows= 132310  errors=3
+  · [ 5650/12359]  119-HR-6756  fetched= 5647  rows= 132437  errors=3
+  · [ 5675/12359]  119-HR-4216  fetched= 5672  rows= 132562  errors=3
+  · [ 5700/12359]  119-HR-7132  fetched= 5697  rows= 132687  errors=3
+  · [ 5725/12359]  119-S-3890  fetched= 5722  rows= 132812  errors=3
+  · [ 5750/12359]  119-HR-3521  fetched= 5747  rows= 132938  errors=3
+  · [ 5775/12359]  119-HR-3015  fetched= 5772  rows= 133065  errors=3
+  · [ 5800/12359]  119-HR-1305  fetched= 5797  rows= 133193  errors=3
+  · [ 5825/12359]  119-HR-1439  fetched= 5822  rows= 133320  errors=3
+  · [ 5850/12359]  119-SRES-464  fetched= 5847  rows= 133447  errors=3
+  · [ 5875/12359]  119-HR-7279  fetched= 5872  rows= 133575  errors=3
+  · [ 5900/12359]  119-HR-7272  fetched= 5897  rows= 133702  errors=3
+  · [ 5925/12359]  119-S-1418  fetched= 5922  rows= 133829  errors=3
+  · [ 5950/12359]  119-HRES-1240  fetched= 5947  rows= 133959  errors=3
+  · [ 5975/12359]  119-HR-8561  fetched= 5972  rows= 134086  errors=3
+  · [ 6000/12359]  119-SRES-103  fetched= 5997  rows= 134211  errors=3
+  · [ 6025/12359]  119-HR-960  fetched= 6022  rows= 134313  errors=3
+  · [ 6050/12359]  119-HR-1709  fetched= 6047  rows= 134413  errors=3
+  · [ 6075/12359]  119-HR-4236  fetched= 6072  rows= 134513  errors=3
+  · [ 6100/12359]  119-HR-97  fetched= 6097  rows= 134613  errors=3
+  · [ 6125/12359]  119-S-1494  fetched= 6122  rows= 134713  errors=3
+  · [ 6150/12359]  119-HR-4639  fetched= 6147  rows= 134813  errors=3
+  · [ 6175/12359]  119-S-2341  fetched= 6172  rows= 134914  errors=3
+  · [ 6200/12359]  119-HR-974  fetched= 6197  rows= 135014  errors=3
+  · [ 6225/12359]  119-HR-1068  fetched= 6222  rows= 135114  errors=3
+  · [ 6250/12359]  119-S-3072  fetched= 6247  rows= 135215  errors=3
+  · [ 6275/12359]  119-HR-2008  fetched= 6272  rows= 135315  errors=3
+  · [ 6300/12359]  119-HR-5930  fetched= 6297  rows= 135416  errors=3
+  · [ 6325/12359]  119-HR-3168  fetched= 6322  rows= 135516  errors=3
+  · [ 6350/12359]  119-HR-6626  fetched= 6347  rows= 135616  errors=3
+  · [ 6375/12359]  119-HR-7073  fetched= 6372  rows= 135716  errors=3
+  · [ 6400/12359]  119-S-3561  fetched= 6397  rows= 135817  errors=3
+  · [ 6425/12359]  119-S-486  fetched= 6422  rows= 135917  errors=3
+  · [ 6450/12359]  119-HR-7023  fetched= 6447  rows= 136018  errors=3
+  · [ 6475/12359]  119-S-4125  fetched= 6472  rows= 136118  errors=3
+  · [ 6500/12359]  119-HR-1217  fetched= 6497  rows= 136218  errors=3
+  · [ 6525/12359]  119-HR-7984  fetched= 6522  rows= 136318  errors=3
+  · [ 6550/12359]  119-HR-3324  fetched= 6547  rows= 136419  errors=3
+  · [ 6575/12359]  119-S-2337  fetched= 6572  rows= 136519  errors=3
+  · [ 6600/12359]  119-HR-6735  fetched= 6597  rows= 136619  errors=3
+  · [ 6625/12359]  119-HR-7698  fetched= 6622  rows= 136726  errors=3
+  · [ 6650/12359]  119-S-257  fetched= 6647  rows= 136829  errors=3
+  · [ 6675/12359]  119-S-1757  fetched= 6672  rows= 136930  errors=3
+  · [ 6700/12359]  119-HCONRES-86  fetched= 6697  rows= 137031  errors=3
+  · [ 6725/12359]  119-HR-1850  fetched= 6722  rows= 137140  errors=3
+  · [ 6750/12359]  119-HR-1606  fetched= 6747  rows= 137218  errors=3
+  · [ 6775/12359]  119-HJRES-39  fetched= 6772  rows= 137293  errors=3
+  · [ 6800/12359]  119-S-660  fetched= 6797  rows= 137368  errors=3
+  · [ 6825/12359]  119-S-353  fetched= 6822  rows= 137443  errors=3
+  · [ 6850/12359]  119-HR-3479  fetched= 6847  rows= 137518  errors=3
+  · [ 6875/12359]  119-HR-3040  fetched= 6872  rows= 137593  errors=3
+  · [ 6900/12359]  119-HR-308  fetched= 6897  rows= 137668  errors=3
+  · [ 6925/12359]  119-S-2371  fetched= 6922  rows= 137743  errors=3
+  · [ 6950/12359]  119-HRES-686  fetched= 6947  rows= 137819  errors=3
+  · [ 6975/12359]  119-HR-4030  fetched= 6972  rows= 137895  errors=3
+  · [ 7000/12359]  119-HRES-738  fetched= 6997  rows= 137970  errors=3
+  · [ 7025/12359]  119-HR-218  fetched= 7022  rows= 138047  errors=3
+  · [ 7050/12359]  119-HR-2922  fetched= 7047  rows= 138122  errors=3
+  · [ 7075/12359]  119-HR-3952  fetched= 7072  rows= 138198  errors=3
+  · [ 7100/12359]  119-S-210  fetched= 7097  rows= 138273  errors=3
+  · [ 7125/12359]  119-HR-760  fetched= 7122  rows= 138348  errors=3
+  · [ 7150/12359]  119-HJRES-79  fetched= 7147  rows= 138423  errors=3
+  · [ 7175/12359]  119-HR-1633  fetched= 7172  rows= 138498  errors=3
+  · [ 7200/12359]  119-HR-3705  fetched= 7197  rows= 138573  errors=3
+  · [ 7225/12359]  119-S-2301  fetched= 7222  rows= 138648  errors=3
+  · [ 7250/12359]  119-HR-6661  fetched= 7247  rows= 138723  errors=3
+  · [ 7275/12359]  119-HR-4085  fetched= 7272  rows= 138798  errors=3
+  · [ 7300/12359]  119-HR-6952  fetched= 7297  rows= 138873  errors=3
+  · [ 7325/12359]  119-S-43  fetched= 7322  rows= 138949  errors=3
+  · [ 7350/12359]  119-S-841  fetched= 7347  rows= 139024  errors=3
+  · [ 7375/12359]  119-S-735  fetched= 7372  rows= 139099  errors=3
+  · [ 7400/12359]  119-HR-3102  fetched= 7397  rows= 139178  errors=3
+  · [ 7425/12359]  119-S-3729  fetched= 7422  rows= 139254  errors=3
+  · [ 7450/12359]  119-S-3784  fetched= 7447  rows= 139329  errors=3
+  · [ 7475/12359]  119-HR-7727  fetched= 7472  rows= 139404  errors=3
+  · [ 7500/12359]  119-S-1216  fetched= 7497  rows= 139480  errors=3
+  · [ 7525/12359]  119-HR-6771  fetched= 7522  rows= 139556  errors=3
+  · [ 7550/12359]  119-S-4011  fetched= 7547  rows= 139631  errors=3
+  · [ 7575/12359]  119-SRES-526  fetched= 7572  rows= 139707  errors=3
+  · [ 7600/12359]  119-SJRES-96  fetched= 7597  rows= 139782  errors=3
+  · [ 7625/12359]  119-HR-6422  fetched= 7622  rows= 139857  errors=3
+  · [ 7650/12359]  119-HR-4079  fetched= 7647  rows= 139932  errors=3
+  · [ 7675/12359]  119-S-390  fetched= 7672  rows= 140007  errors=3
+  · [ 7700/12359]  119-S-800  fetched= 7697  rows= 140082  errors=3
+  · [ 7725/12359]  119-HR-6267  fetched= 7722  rows= 140157  errors=3
+  · [ 7750/12359]  119-S-3232  fetched= 7747  rows= 140233  errors=3
+  · [ 7775/12359]  119-S-2924  fetched= 7772  rows= 140309  errors=3
+  · [ 7800/12359]  119-S-3496  fetched= 7797  rows= 140391  errors=3
+  · [ 7825/12359]  119-HR-7822  fetched= 7822  rows= 140468  errors=3
+  · [ 7850/12359]  119-HR-6387  fetched= 7847  rows= 140544  errors=3
+  · [ 7875/12359]  119-HR-7879  fetched= 7872  rows= 140622  errors=3
+  · [ 7900/12359]  119-HRES-1025  fetched= 7897  rows= 140698  errors=3
+  · [ 7925/12359]  119-S-2292  fetched= 7922  rows= 140773  errors=3
+  · [ 7950/12359]  119-S-3985  fetched= 7947  rows= 140859  errors=3
+  · [ 7975/12359]  119-HR-1374  fetched= 7972  rows= 140914  errors=3
+  · [ 8000/12359]  119-S-763  fetched= 7997  rows= 140964  errors=3
+  · [ 8025/12359]  119-HR-2238  fetched= 8022  rows= 141015  errors=3
+  · [ 8050/12359]  119-HR-827  fetched= 8047  rows= 141065  errors=3
+  · [ 8075/12359]  119-S-2013  fetched= 8072  rows= 141115  errors=3
+  · [ 8100/12359]  119-HR-4112  fetched= 8097  rows= 141165  errors=3
+  · [ 8125/12359]  119-S-1936  fetched= 8122  rows= 141215  errors=3
+  · [ 8150/12359]  119-S-1761  fetched= 8147  rows= 141265  errors=3
+  · [ 8175/12359]  119-S-2578  fetched= 8172  rows= 141315  errors=3
+  · [ 8200/12359]  119-HR-4923  fetched= 8197  rows= 141365  errors=3
+  · [ 8225/12359]  119-S-2781  fetched= 8222  rows= 141416  errors=3
+  · [ 8250/12359]  119-HR-252  fetched= 8247  rows= 141466  errors=3
+  · [ 8275/12359]  119-S-298  fetched= 8272  rows= 141516  errors=3
+  · [ 8300/12359]  119-HR-5902  fetched= 8297  rows= 141566  errors=3
+  · [ 8325/12359]  119-S-2469  fetched= 8322  rows= 141616  errors=3
+  · [ 8350/12359]  119-HR-2973  fetched= 8347  rows= 141666  errors=3
+  · [ 8375/12359]  119-HR-3465  fetched= 8372  rows= 141716  errors=3
+  · [ 8400/12359]  119-HR-5447  fetched= 8397  rows= 141766  errors=3
+  · [ 8425/12359]  119-HR-1532  fetched= 8422  rows= 141816  errors=3
+  · [ 8450/12359]  119-HR-4174  fetched= 8447  rows= 141866  errors=3
+  · [ 8475/12359]  119-HR-1444  fetched= 8472  rows= 141916  errors=3
+  · [ 8500/12359]  119-S-2628  fetched= 8497  rows= 141966  errors=3
+  · [ 8525/12359]  119-S-236  fetched= 8522  rows= 142016  errors=3
+  · [ 8550/12359]  119-S-3420  fetched= 8547  rows= 142066  errors=3
+  · [ 8575/12359]  119-S-823  fetched= 8572  rows= 142116  errors=3
+  · [ 8600/12359]  119-HR-3761  fetched= 8597  rows= 142166  errors=3
+  · [ 8625/12359]  119-HR-2813  fetched= 8622  rows= 142217  errors=3
+  · [ 8650/12359]  119-S-2058  fetched= 8647  rows= 142267  errors=3
+  · [ 8675/12359]  119-HR-6605  fetched= 8672  rows= 142318  errors=3
+  · [ 8700/12359]  119-HR-3157  fetched= 8697  rows= 142368  errors=3
+  · [ 8725/12359]  119-HR-937  fetched= 8722  rows= 142418  errors=3
+  · [ 8750/12359]  119-HR-2667  fetched= 8747  rows= 142468  errors=3
+  · [ 8775/12359]  119-S-1396  fetched= 8772  rows= 142518  errors=3
+  · [ 8800/12359]  119-S-3745  fetched= 8797  rows= 142568  errors=3
+  · [ 8825/12359]  119-S-3803  fetched= 8822  rows= 142618  errors=3
+  · [ 8850/12359]  119-S-3213  fetched= 8847  rows= 142668  errors=3
+  · [ 8875/12359]  119-HR-7443  fetched= 8872  rows= 142718  errors=3
+  · [ 8900/12359]  119-HJRES-139  fetched= 8897  rows= 142768  errors=3
+  · [ 8925/12359]  119-S-4013  fetched= 8922  rows= 142818  errors=3
+  · [ 8950/12359]  119-HR-7952  fetched= 8947  rows= 142868  errors=3
+  · [ 8975/12359]  119-HR-1316  fetched= 8972  rows= 142918  errors=3
+  · [ 9000/12359]  119-HR-4604  fetched= 8997  rows= 142968  errors=3
+  · [ 9025/12359]  119-S-1148  fetched= 9022  rows= 143024  errors=3
+  · [ 9050/12359]  119-S-435  fetched= 9047  rows= 143074  errors=3
+  · [ 9075/12359]  119-HR-3638  fetched= 9072  rows= 143124  errors=3
+  · [ 9100/12359]  119-HR-7403  fetched= 9097  rows= 143174  errors=3
+  · [ 9125/12359]  119-HR-8016  fetched= 9122  rows= 143233  errors=3
+  · [ 9150/12359]  119-HR-7848  fetched= 9147  rows= 143285  errors=3
+  · [ 9175/12359]  119-HR-8343  fetched= 9172  rows= 143335  errors=3
+  · [ 9200/12359]  119-HR-4889  fetched= 9197  rows= 143390  errors=3
+  · [ 9225/12359]  119-S-4148  fetched= 9222  rows= 143456  errors=3
+  · [ 9250/12359]  119-HRES-1233  fetched= 9247  rows= 143507  errors=3
+  · [ 9275/12359]  119-HR-8400  fetched= 9272  rows= 143558  errors=3
+  · [ 9300/12359]  119-HR-8311  fetched= 9297  rows= 143608  errors=3
+  · [ 9325/12359]  119-HR-7552  fetched= 9322  rows= 143663  errors=3
+  · [ 9350/12359]  119-HR-156  fetched= 9347  rows= 143693  errors=3
+  · [ 9375/12359]  119-S-319  fetched= 9372  rows= 143718  errors=3
+  · [ 9400/12359]  119-HR-2404  fetched= 9397  rows= 143744  errors=3
+  · [ 9425/12359]  119-HR-784  fetched= 9422  rows= 143769  errors=3
+  · [ 9450/12359]  119-S-1218  fetched= 9447  rows= 143794  errors=3
+  · [ 9475/12359]  119-HR-2953  fetched= 9472  rows= 143819  errors=3
+  · [ 9500/12359]  119-HRES-246  fetched= 9497  rows= 143844  errors=3
+  · [ 9525/12359]  119-S-920  fetched= 9522  rows= 143874  errors=3
+  · [ 9550/12359]  119-SRES-177  fetched= 9547  rows= 143899  errors=3
+  · [ 9575/12359]  119-S-444  fetched= 9572  rows= 143924  errors=3
+  · [ 9600/12359]  119-S-1835  fetched= 9597  rows= 143949  errors=3
+  · [ 9625/12359]  119-HR-2408  fetched= 9622  rows= 143974  errors=3
+  · [ 9650/12359]  119-SRES-257  fetched= 9647  rows= 143999  errors=3
+  · [ 9675/12359]  119-S-1414  fetched= 9672  rows= 144025  errors=3
+  · [ 9700/12359]  119-S-604  fetched= 9697  rows= 144050  errors=3
+  · [ 9725/12359]  119-HR-4098  fetched= 9722  rows= 144076  errors=3
+  · [ 9750/12359]  119-SRES-35  fetched= 9747  rows= 144101  errors=3
+  · [ 9775/12359]  119-HR-1635  fetched= 9772  rows= 144126  errors=3
+  · [ 9800/12359]  119-HR-3814  fetched= 9797  rows= 144151  errors=3
+  · [ 9825/12359]  119-S-2277  fetched= 9822  rows= 144176  errors=3
+  · [ 9850/12359]  119-S-1958  fetched= 9847  rows= 144201  errors=3
+  · [ 9875/12359]  119-HR-103  fetched= 9872  rows= 144226  errors=3
+  · [ 9900/12359]  119-S-2187  fetched= 9897  rows= 144251  errors=3
+  · [ 9925/12359]  119-HR-4571  fetched= 9922  rows= 144276  errors=3
+  · [ 9950/12359]  119-HR-4737  fetched= 9947  rows= 144301  errors=3
+  · [ 9975/12359]  119-S-2655  fetched= 9972  rows= 144326  errors=3
+  · [10000/12359]  119-SRES-365  fetched= 9997  rows= 144351  errors=3
+  · [10025/12359]  119-HR-5229  fetched=10022  rows= 144376  errors=3
+  · [10050/12359]  119-HR-5335  fetched=10047  rows= 144401  errors=3
+  · [10075/12359]  119-HR-2482  fetched=10072  rows= 144426  errors=3
+  · [10100/12359]  119-HR-5648  fetched=10097  rows= 144451  errors=3
+  · [10125/12359]  119-HR-5534  fetched=10122  rows= 144476  errors=3
+  · [10150/12359]  119-S-2604  fetched=10147  rows= 144501  errors=3
+  · [10175/12359]  119-HR-5871  fetched=10172  rows= 144526  errors=3
+  · [10200/12359]  119-HRES-914  fetched=10197  rows= 144551  errors=3
+  · [10225/12359]  119-SJRES-48  fetched=10222  rows= 144576  errors=3
+  · [10250/12359]  119-HR-1887  fetched=10247  rows= 144601  errors=3
+  · [10275/12359]  119-S-1122  fetched=10272  rows= 144626  errors=3
+  · [10300/12359]  119-S-1313  fetched=10297  rows= 144651  errors=3
+  · [10325/12359]  119-HR-4399  fetched=10322  rows= 144677  errors=3
+  · [10350/12359]  119-S-1014  fetched=10347  rows= 144702  errors=3
+  · [10375/12359]  119-S-630  fetched=10372  rows= 144729  errors=3
+  · [10400/12359]  119-S-1640  fetched=10397  rows= 144754  errors=3
+  · [10425/12359]  119-S-2177  fetched=10422  rows= 144779  errors=3
+  · [10450/12359]  119-S-824  fetched=10447  rows= 144804  errors=3
+  · [10475/12359]  119-S-1013  fetched=10472  rows= 144829  errors=3
+  · [10500/12359]  119-S-2629  fetched=10497  rows= 144854  errors=3
+  · [10525/12359]  119-HR-6183  fetched=10522  rows= 144881  errors=3
+  · [10550/12359]  119-HR-3710  fetched=10547  rows= 144907  errors=3
+  · [10575/12359]  119-HRES-796  fetched=10572  rows= 144932  errors=3
+  · [10600/12359]  119-HR-5523  fetched=10597  rows= 144957  errors=3
+  · [10625/12359]  119-S-3200  fetched=10622  rows= 144982  errors=3
+  · [10650/12359]  119-SJRES-100  fetched=10647  rows= 145007  errors=3
+  · [10675/12359]  119-S-3467  fetched=10672  rows= 145032  errors=3
+  · [10700/12359]  119-HR-6596  fetched=10697  rows= 145057  errors=3
+  · [10725/12359]  119-S-3447  fetched=10722  rows= 145082  errors=3
+  · [10750/12359]  119-SRES-465  fetched=10747  rows= 145107  errors=3
+  · [10775/12359]  119-SRES-575  fetched=10772  rows= 145132  errors=3
+  · [10800/12359]  119-HR-172  fetched=10797  rows= 145157  errors=3
+  · [10825/12359]  119-S-3536  fetched=10822  rows= 145182  errors=3
+  · [10850/12359]  119-HR-6872  fetched=10847  rows= 145207  errors=3
+  · [10875/12359]  119-HR-6999  fetched=10872  rows= 145232  errors=3
+  · [10900/12359]  119-HR-6828  fetched=10897  rows= 145257  errors=3
+  · [10925/12359]  119-HR-6821  fetched=10922  rows= 145282  errors=3
+  · [10950/12359]  119-S-2086  fetched=10947  rows= 145307  errors=3
+  ! TimeoutError: retrying after 2.0s
+  · [10975/12359]  119-S-1278  fetched=10972  rows= 145332  errors=3
+  · [11000/12359]  119-HR-6852  fetched=10997  rows= 145357  errors=3
+  · [11025/12359]  119-HR-7225  fetched=11022  rows= 145383  errors=3
+  · [11050/12359]  119-S-3651  fetched=11047  rows= 145408  errors=3
+  · [11075/12359]  119-HR-7236  fetched=11072  rows= 145433  errors=3
+  · [11100/12359]  119-SRES-413  fetched=11097  rows= 145458  errors=3
+  · [11125/12359]  119-HR-7465  fetched=11122  rows= 145491  errors=3
+  · [11150/12359]  119-S-1685  fetched=11147  rows= 145516  errors=3
+  · [11175/12359]  119-S-3749  fetched=11172  rows= 145542  errors=3
+  · [11200/12359]  119-HR-7473  fetched=11197  rows= 145567  errors=3
+  · [11225/12359]  119-S-3877  fetched=11222  rows= 145593  errors=3
+  · [11250/12359]  119-HR-7560  fetched=11247  rows= 145618  errors=3
+  · [11275/12359]  119-SJRES-113  fetched=11272  rows= 145643  errors=3
+  · [11300/12359]  119-S-3899  fetched=11297  rows= 145668  errors=3
+  · [11325/12359]  119-HR-7353  fetched=11322  rows= 145693  errors=3
+  · [11350/12359]  119-S-1269  fetched=11347  rows= 145718  errors=3
+  · [11375/12359]  119-S-2644  fetched=11372  rows= 145745  errors=3
+  · [11400/12359]  119-HR-1534  fetched=11397  rows= 145770  errors=3
+  · [11425/12359]  119-S-3371  fetched=11422  rows= 145795  errors=3
+  · [11450/12359]  119-S-3409  fetched=11447  rows= 145820  errors=3
+  · [11475/12359]  119-S-2360  fetched=11472  rows= 145845  errors=3
+  · [11500/12359]  119-HR-7260  fetched=11497  rows= 145870  errors=3
+  · [11525/12359]  119-S-3094  fetched=11522  rows= 145895  errors=3
+  · [11550/12359]  119-S-3534  fetched=11547  rows= 145920  errors=3
+  · [11575/12359]  119-S-2691  fetched=11572  rows= 145948  errors=3
+  · [11600/12359]  119-HR-7884  fetched=11597  rows= 145973  errors=3
+  · [11625/12359]  119-HR-7833  fetched=11622  rows= 145999  errors=3
+  · [11650/12359]  119-HR-7477  fetched=11647  rows= 146024  errors=3
+  · [11675/12359]  119-S-955  fetched=11672  rows= 146049  errors=3
+  · [11700/12359]  119-S-3359  fetched=11697  rows= 146076  errors=3
+  · [11725/12359]  119-HRES-387  fetched=11722  rows= 146101  errors=3
+  · [11750/12359]  119-HR-3584  fetched=11747  rows= 146126  errors=3
+  · [11775/12359]  119-S-3045  fetched=11772  rows= 146151  errors=3
+  · [11800/12359]  119-S-1084  fetched=11797  rows= 146176  errors=3
+  · [11825/12359]  119-S-815  fetched=11822  rows= 146201  errors=3
+  · [11850/12359]  119-HJRES-130  fetched=11847  rows= 146226  errors=3
+  · [11875/12359]  119-S-4212  fetched=11872  rows= 146251  errors=3
+  · [11900/12359]  119-HR-6607  fetched=11897  rows= 146276  errors=3
+  · [11925/12359]  119-HR-8187  fetched=11922  rows= 146303  errors=3
+  · [11950/12359]  119-S-1071  fetched=11947  rows= 146328  errors=3
+  · [11975/12359]  119-HR-8271  fetched=11972  rows= 146354  errors=3
+  · [12000/12359]  119-HR-7075  fetched=11997  rows= 146379  errors=3
+  · [12025/12359]  119-HR-7962  fetched=12022  rows= 146404  errors=3
+  · [12050/12359]  119-S-3936  fetched=12047  rows= 146429  errors=3
+  · [12075/12359]  119-HR-8406  fetched=12072  rows= 146457  errors=3
+  · [12100/12359]  119-HRES-288  fetched=12097  rows= 146482  errors=3
+  · [12125/12359]  119-S-3170  fetched=12122  rows= 146507  errors=3
+  · [12150/12359]  119-HRES-1231  fetched=12147  rows= 146546  errors=3
+  · [12175/12359]  119-HR-8622  fetched=12172  rows= 146575  errors=3
+  · [12200/12359]  119-S-4352  fetched=12197  rows= 146600  errors=3
+  · [12225/12359]  119-S-4405  fetched=12222  rows= 146626  errors=3
+  · [12250/12359]  119-SRES-707  fetched=12247  rows= 146655  errors=3
+  · [12275/12359]  119-HR-8405  fetched=12272  rows= 146681  errors=3
+  · [12300/12359]  119-S-4432  fetched=12297  rows= 146706  errors=3
+  · [12325/12359]  119-HR-8630  fetched=12322  rows= 146732  errors=3
+  · [12350/12359]  119-S-4440  fetched=12347  rows= 146764  errors=3
+  · [12359/12359]  119-S-4433  fetched=12356  rows= 146774  errors=3
+
+→ done. status=ok {'considered': 12359, 'list_fetched': 12356, 'rows_total': 146774, 'updated': 12356, 'errors': 3, 'skipped': 0}

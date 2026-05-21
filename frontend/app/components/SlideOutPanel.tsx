@@ -209,6 +209,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAllSubcommittees, setShowAllSubcommittees] = useState(false);
+  const [newsExpanded, setNewsExpanded] = useState(false);
 
   const isOpen = bioguideId !== null;
 
@@ -226,6 +227,7 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
     setError(null);
     setShowAllSubcommittees(false);
     setSelectedVideo(null);
+    setNewsExpanded(false);
 
     cachedFetch<Legislator>(`${API_URL}/api/legislators/${bioguideId}`, CACHE_TTL.LEGISLATOR)
       .then((data) => {
@@ -580,33 +582,86 @@ export default function SlideOutPanel({ bioguideId, onClose }: SlideOutPanelProp
                         Last 30 days
                       </span>
                     </h3>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                        <div className="text-center">
-                          <div className="text-3xl font-bold text-gray-900">{legislator.news_mentions}</div>
-                          <div className="text-xs text-gray-500">News Articles</div>
-                        </div>
-                        {legislator.news_sample_headlines && legislator.news_sample_headlines.length > 0 && (
-                          <div className="flex-1 border-l border-gray-200 pl-4">
-                            <div className="text-xs text-gray-500 mb-1">Recent Headlines</div>
-                            <div className="space-y-1">
-                              {legislator.news_sample_headlines.slice(0, 2).map((headline: { title: string; source: string; url: string }, idx: number) => (
-                                <a 
-                                  key={idx}
-                                  href={headline.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="block text-xs text-blue-600 hover:text-blue-800 truncate"
-                                  title={headline.title}
-                                >
-                                  {headline.source}: {headline.title}
-                                </a>
-                              ))}
+
+                    {/* Collapsed view */}
+                    {!newsExpanded && (
+                      <button
+                        onClick={() => setNewsExpanded(true)}
+                        className="w-full text-left bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg p-4"
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Count square */}
+                          <div className="flex-shrink-0 bg-white border border-gray-200 rounded-lg w-16 h-16 flex flex-col items-center justify-center shadow-sm">
+                            <div className="text-2xl font-bold text-gray-900 leading-none">{legislator.news_mentions}</div>
+                            <div className="text-[10px] text-gray-500 mt-0.5">Articles</div>
+                          </div>
+
+                          {/* Headlines preview */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-xs font-medium text-gray-500">Recent Headlines</span>
+                              <span className="text-xs text-blue-500 flex-shrink-0 ml-2">Show all ›</span>
                             </div>
+                            {legislator.news_sample_headlines && legislator.news_sample_headlines.length > 0 ? (
+                              <div>
+                                <div className="text-xs text-gray-700 leading-snug">
+                                  <span className="font-medium text-gray-400">{legislator.news_sample_headlines[0].source}: </span>
+                                  {legislator.news_sample_headlines[0].title}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-xs text-gray-400">No headlines available</div>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    )}
+
+                    {/* Expanded view */}
+                    {newsExpanded && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        {/* Header row with count + collapse button */}
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="flex-shrink-0 bg-white border border-gray-200 rounded-lg w-16 h-16 flex flex-col items-center justify-center shadow-sm">
+                            <div className="text-2xl font-bold text-gray-900 leading-none">{legislator.news_mentions}</div>
+                            <div className="text-[10px] text-gray-500 mt-0.5">Articles</div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-700">
+                              {legislator.news_mentions} mention{legislator.news_mentions !== 1 ? "s" : ""} in the last 30 days
+                            </div>
+                            <div className="text-xs text-gray-400 mt-0.5">
+                              {legislator.news_sample_headlines?.length || 0} sample headline{(legislator.news_sample_headlines?.length || 0) !== 1 ? "s" : ""} saved
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setNewsExpanded(false)}
+                            className="text-xs text-blue-500 hover:text-blue-700 flex-shrink-0"
+                          >
+                            ‹ Collapse
+                          </button>
+                        </div>
+
+                        {/* All headlines, each on its own line */}
+                        {legislator.news_sample_headlines && legislator.news_sample_headlines.length > 0 && (
+                          <div className="space-y-2">
+                            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Recent Headlines</div>
+                            {legislator.news_sample_headlines.map((headline: { title: string; source: string; url: string }, idx: number) => (
+                              <a
+                                key={idx}
+                                href={headline.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex flex-col gap-0.5 p-2.5 bg-white rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-colors group"
+                              >
+                                <span className="text-xs font-medium text-gray-400 group-hover:text-blue-400">{headline.source}</span>
+                                <span className="text-sm text-gray-800 group-hover:text-blue-700 leading-snug">{headline.title}</span>
+                              </a>
+                            ))}
                           </div>
                         )}
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 

@@ -93,8 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error("Error updating user document in Firestore:", error);
         }
 
-        // Fetch role/verification from backend
-        await fetchUserProfile(user);
+        // Fetch role/verification from backend (non-blocking so login isn't delayed)
+        fetchUserProfile(user);
       } else {
         setRole(null);
         setVerified(false);

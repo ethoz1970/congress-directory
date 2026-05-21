@@ -4,6 +4,18 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { API_URL } from "../../../lib/api";
 import Link from "next/link";
+import { primaryPortal } from "../../../lib/portals";
+
+interface RecentBill {
+  external_id: string;
+  bill_number: string;
+  title: string;
+  plain_english: string | null;
+  status: string;
+  last_action_at: string;
+  portal_tag?: string[];
+  bipartisan?: boolean;
+}
 
 interface Legislator {
   bioguide_id: string;
@@ -18,6 +30,46 @@ interface Legislator {
   ideology_score?: number;
   news_mentions?: number;
   photo_url?: string;
+  recent_bills?: RecentBill[];
+}
+
+// Mirror the bills-page status color/label tables so badges look the
+// same wherever a bill surfaces.
+const BILL_STATUS_COLORS: Record<string, string> = {
+  introduced: "bg-blue-500/20 text-blue-200 border-blue-400/30",
+  committee: "bg-amber-500/20 text-amber-200 border-amber-400/30",
+  floor: "bg-orange-500/20 text-orange-200 border-orange-400/30",
+  passed_one: "bg-indigo-500/20 text-indigo-200 border-indigo-400/30",
+  passed_both: "bg-purple-500/20 text-purple-200 border-purple-400/30",
+  enrolled: "bg-pink-500/20 text-pink-200 border-pink-400/30",
+  signed: "bg-emerald-500/20 text-emerald-200 border-emerald-400/30",
+  vetoed: "bg-red-500/20 text-red-200 border-red-400/30",
+  dead: "bg-gray-500/20 text-gray-300 border-gray-400/30",
+};
+
+const BILL_STATUS_LABELS: Record<string, string> = {
+  introduced: "Introduced",
+  committee: "In Committee",
+  floor: "On Floor",
+  passed_one: "Passed One Chamber",
+  passed_both: "Passed Both Chambers",
+  enrolled: "Enrolled",
+  signed: "Signed Into Law",
+  vetoed: "Vetoed",
+  dead: "Dead",
+};
+
+function fmtBillStatus(s: string): string {
+  return BILL_STATUS_LABELS[s] || s.replace(/_/g, " ");
+}
+
+function fmtBillDate(iso: string): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 const STATE_NAMES: Record<string, string> = {
@@ -218,6 +270,71 @@ export default function MemberCardPage() {
             </div>
           </div>
         </div>
+
+        {/* Recent Sponsored Bills (from the Oracle, Nia summaries) */}
+        {legislator.recent_bills && legislator.recent_bills.length > 0 && (
+          <div className="w-full max-w-sm mt-6">
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
+                Recent Sponsored Bills
+              </h2>
+              <Link
+                href="/bills"
+                className="text-xs text-blue-400 hover:text-blue-300"
+              >
+                All bills →
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {legislator.recent_bills.map((bill) => {
+                const statusColor =
+                  BILL_STATUS_COLORS[bill.status] ||
+                  "bg-gray-500/20 text-gray-300 border-gray-400/30";
+                const portal = primaryPortal(bill.portal_tag);
+                return (
+                  <Link
+                    key={bill.external_id}
+                    href={`/bill/${bill.external_id}`}
+                    className="block bg-white/5 border border-white/10 rounded-lg p-3 hover:bg-white/10 hover:border-white/20 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <span className="text-sm font-semibold text-white">
+                        {bill.bill_number}
+                      </span>
+                      <span
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded border ${statusColor}`}
+                      >
+                        {fmtBillStatus(bill.status)}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-200 line-clamp-2 mb-1">
+                      {bill.title}
+                    </div>
+                    {bill.plain_english && (
+                      <p className="text-xs text-gray-400 line-clamp-2 mb-2">
+                        {bill.plain_english}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                      {portal && (
+                        <span
+                          className="px-1.5 py-0.5 rounded font-medium"
+                          style={{
+                            backgroundColor: `${portal.color}40`,
+                            color: portal.accent,
+                          }}
+                        >
+                          {portal.short}
+                        </span>
+                      )}
+                      <span>{fmtBillDate(bill.last_action_at)}</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="mt-6 flex flex-col sm:flex-row gap-3">

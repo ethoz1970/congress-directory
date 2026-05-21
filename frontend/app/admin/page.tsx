@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../lib/AuthContext";
 import { authenticatedFetch } from "../../lib/api";
+import DataTab from "./DataTab";
 
 interface UserData {
   uid: string;
@@ -91,6 +92,7 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [accessChecked, setAccessChecked] = useState(false);
   const [changingRole, setChangingRole] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"users" | "data">("users");
 
   useEffect(() => {
     if (authLoading) return;
@@ -243,8 +245,8 @@ export default function AdminDashboard() {
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 pt-6 pb-0">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
               <p className="text-gray-600 mt-1">
@@ -258,10 +260,34 @@ export default function AdminDashboard() {
               &larr; Back to Directory
             </button>
           </div>
+          {/* Tab Bar */}
+          <div className="flex gap-1 border-b border-gray-200">
+            {(["users", "data"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-5 py-2.5 text-sm font-medium capitalize border-b-2 -mb-px transition-colors ${
+                  activeTab === tab
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-800"
+                }`}
+              >
+                {tab === "users" ? "👥 Users" : "🗄️ Data"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Data Tab */}
+      {activeTab === "data" && (
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <DataTab />
+        </div>
+      )}
+
+      {/* Users Tab */}
+      {activeTab === "users" && (
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
@@ -397,6 +423,7 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+      )}
     </main>
   );
 }
