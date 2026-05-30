@@ -1,0 +1,67 @@
+#!/bin/bash
+# Oracle Dashboard — starts the FastAPI API on $DASHBOARD_PORT (8765)
+# and a tiny Python http.server for the static HTML on $DASHBOARD_PORT+1.
+#
+# Run from /Users/blind/oracle-dashboard/ on the Oracle. The dashboard
+# binds to 0.0.0.0 so the LAN can reach it; the Cloudflare Tunnel sits
+# in front for external access.
+
+set -euo pipefail
+
+here="$(cd "$(dirname "$0")" && pwd)"
+cd "$here"
+
+# NOTE: we don't `source .env` here. The FastAPI app loads it itself via
+# python-dotenv, and bash sourcing chokes on legitimate values that
+# contain shell metacharacters (a literal "<password>" placeholder gets
+# parsed as input redirection). The only var start.sh needs from .env
+# is $DASHBOARD_PORT, which we extract surgically below.
+if [ -f .env ]; then
+  port_line="$(grep -E '^[[:space:]]*DASHBOARD_PORT=' .env | tail -n1 || true)"
+  if [ -n "$port_line" ]; then
+    DASHBOARD_PORT="${port_line#*=}"
+    DASHBOARD_PORT="${DASHBOARD_PORT%%[[:space:]]*}"  # trim trailing whitespace/comments
+    export DASHBOARD_PORT
+  fi
+fi
+
+API_PORT="${DASHBOARD_PORT:-8765}"
+UI_PORT=$(( API_PORT + 1 ))
+
+# Activate the venv if one exists (created by README setup).
+if [ -f .venv/bin/activate ]; then
+  # shellcheck disable=SC1091
+  source .venv/bin/activate
+fi
+
+# Force Python to line-buffer stdout so log tailing shows progress
+# immediately when redirected to a file.
+export PYTHONUNBUFFERED=1
+
+# Kill any prior instances of either service so re-running this is
+# idempotent. `|| true` keeps set -e from tripping when nothing is
+# listening.
+echo "[start.sh] stopping previous instances (if any) ..."
+pkill -f "uvicorn api:app" || true
+pkill -f "http.server $UI_PORT" || true
+sleep 1
+
+# Launch API.
+echo "[start.sh] starting API on :$API_PORT ..."
+nohup uvicorn api:app --host 0.0.0.0 --port "$API_PORT" \
+  > api.log 2>&1 &
+echo "  api PID $!"
+
+# Launch static UI server.
+echo "[start.sh] starting UI on :$UI_PORT ..."
+nohup python3 -m http.server "$UI_PORT" --bind 0.0.0.0 \
+  > ui.log 2>&1 &
+echo "  ui PID $!"
+
+sleep 2
+echo ""
+echo "→ Oracle Dashboard is up."
+echo "  API : http://10.1.10.4:$API_PORT/ping"
+echo "  UI  : http://10.1.10.4:$UI_PORT/dashboard.html"
+echo ""
+echo "Tail logs with:  tail -f $here/api.log  $here/ui.log"

@@ -1,2 +1,5 @@
 pymongo>=4.6
 psycopg[binary]>=3.1
+
+# Network Centrality component (influence scoring)
+networkx>=3.0
